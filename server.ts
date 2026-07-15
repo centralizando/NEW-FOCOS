@@ -1,9 +1,13 @@
 import express from "express";
 import path from "path";
-import pg from "pg";
+import { Pool, neonConfig } from "@neondatabase/serverless";
+import ws from "ws";
 import dotenv from "dotenv";
 
 dotenv.config();
+
+// Configure Neon to use the ws library for WebSockets in Node environments
+neonConfig.webSocketConstructor = ws;
 
 const app = express();
 const PORT = 3000;
@@ -15,11 +19,11 @@ const dbUrl = "postgresql://neondb_owner:npg_b5VCnMmgcBO6@ep-noisy-night-atqopup
 
 let dbStatus = {
   connected: false,
-  mode: "fallback", // "postgres" | "fallback"
+  mode: "uninitialized" as "postgres" | "fallback" | "uninitialized",
   error: null as string | null
 };
 
-let pool: pg.Pool | null = null;
+let pool: Pool | null = null;
 
 // In-memory fallback database in case the database is offline or misconfigured
 interface LocalMilestone {
@@ -75,7 +79,7 @@ async function initDatabase() {
         try { await pool.end(); } catch (e) {}
       }
 
-      pool = new pg.Pool({
+      pool = new Pool({
         connectionString: dbUrl,
         ssl: {
           rejectUnauthorized: false
@@ -130,12 +134,10 @@ async function initDatabase() {
   return initPromise;
 }
 
-initDatabase();
-
 // Auto-reconnect middleware for Serverless environment resilience
 app.use(async (req, res, next) => {
-  if (req.path.startsWith("/api/") && req.path !== "/api/db-status" && req.path !== "/api/db-reconnect") {
-    if (!dbStatus.connected || dbStatus.mode !== "postgres" || !pool) {
+  if (req.path.startsWith("/api/")) {
+    if (dbStatus.mode === "uninitialized") {
       console.log("Lazy-initializing database connection for path:", req.path);
       await initDatabase();
     }
@@ -152,6 +154,7 @@ app.get("/api/db-status", (req, res) => {
 
 // Re-try database connection
 app.post("/api/db-reconnect", async (req, res) => {
+  dbStatus.mode = "uninitialized";
   await initDatabase();
   res.json(dbStatus);
 });
