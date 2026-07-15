@@ -1,14 +1,9 @@
 import express from "express";
 import path from "path";
-import { createServer as createViteServer } from "vite";
-import { Pool, neonConfig } from "@neondatabase/serverless";
-import ws from "ws";
+import pg from "pg";
 import dotenv from "dotenv";
 
 dotenv.config();
-
-// Configure Neon to use the ws library for WebSockets
-neonConfig.webSocketConstructor = ws;
 
 const app = express();
 const PORT = 3000;
@@ -24,7 +19,7 @@ let dbStatus = {
   error: null as string | null
 };
 
-let pool: Pool | null = null;
+let pool: pg.Pool | null = null;
 
 // In-memory fallback database in case the database is offline or misconfigured
 interface LocalMilestone {
@@ -80,7 +75,7 @@ async function initDatabase() {
         try { await pool.end(); } catch (e) {}
       }
 
-      pool = new Pool({
+      pool = new pg.Pool({
         connectionString: dbUrl,
         ssl: {
           rejectUnauthorized: false
@@ -537,6 +532,7 @@ app.put("/api/milestones/:id", async (req, res) => {
 // Configure Vite dev server or static distribution
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
+    const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
