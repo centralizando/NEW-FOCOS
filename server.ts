@@ -1,21 +1,21 @@
 import express from "express";
 import path from "path";
-import pg from "pg";
+import { Pool, neonConfig } from "@neondatabase/serverless";
+import ws from "ws";
 import dotenv from "dotenv";
 
-const { Pool } = pg;
-
 dotenv.config();
+
+// Configure Neon to use the ws library for WebSockets in Node environments
+neonConfig.webSocketConstructor = ws;
 
 const app = express();
 const PORT = 3000;
 
 app.use(express.json());
 
-// Neon DB Connection details - prioritize environment variables for Vercel, fallback to the user's Wispy Fog DB
-const dbUrl = process.env.DATABASE_URL || 
-              process.env.NEON_DATABASE_URL || 
-              "postgresql://neondb_owner:npg_ERaPq9szZ3kp@ep-wispy-fog-at3k4k0x-pooler.c-9.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require";
+// Neon DB Connection details - strictly use the requested connection string
+const dbUrl = "postgresql://neondb_owner:npg_ERaPq9szZ3kp@ep-wispy-fog-at3k4k0x-pooler.c-9.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require";
 
 let dbStatus = {
   connected: false,
@@ -23,7 +23,7 @@ let dbStatus = {
   error: null as string | null
 };
 
-let pool: pg.Pool | null = null;
+let pool: Pool | null = null;
 
 // In-memory fallback database in case the database is offline or misconfigured
 interface LocalMilestone {
