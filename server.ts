@@ -1,10 +1,14 @@
 import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
-import pg from "pg";
+import { Pool, neonConfig } from "@neondatabase/serverless";
+import ws from "ws";
 import dotenv from "dotenv";
 
 dotenv.config();
+
+// Configure Neon to use the ws library for WebSockets
+neonConfig.webSocketConstructor = ws;
 
 const app = express();
 const PORT = 3000;
@@ -20,7 +24,7 @@ let dbStatus = {
   error: null as string | null
 };
 
-let pool: pg.Pool | null = null;
+let pool: Pool | null = null;
 
 // In-memory fallback database in case the database is offline or misconfigured
 interface LocalMilestone {
@@ -64,57 +68,71 @@ let localTasks: LocalTask[] = [
 let nextTaskId = 2;
 let nextMilestoneId = 200;
 
+let initPromise: Promise<void> | null = null;
+
 async function initDatabase() {
-  console.log("Initializing database connection to Neon PostgreSQL...");
-  try {
-    pool = new pg.Pool({
-      connectionString: dbUrl,
-      ssl: {
-        rejectUnauthorized: false
-      },
-      connectionTimeoutMillis: 5000 // 5 seconds timeout
-    });
+  if (initPromise) return initPromise;
 
-    // Test query
-    const client = await pool.connect();
-    console.log("Successfully connected to Neon PostgreSQL database!");
-    
-    // Create tables if they do not exist
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS foco_tasks (
-        id SERIAL PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        category VARCHAR(100) NOT NULL,
-        due_date DATE NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        completed BOOLEAN DEFAULT FALSE,
-        current_progress INTEGER DEFAULT 0
-      );
-    `);
+  initPromise = (async () => {
+    console.log("Initializing database connection to Neon PostgreSQL...");
+    try {
+      if (pool) {
+        try { await pool.end(); } catch (e) {}
+      }
 
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS foco_milestones (
-        id SERIAL PRIMARY KEY,
-        task_id INTEGER REFERENCES foco_tasks(id) ON DELETE CASCADE,
-        date_string VARCHAR(10) NOT NULL,
-        label VARCHAR(100) NOT NULL,
-        target_progress INTEGER NOT NULL,
-        description VARCHAR(255),
-        completed BOOLEAN DEFAULT FALSE
-      );
-    `);
+      pool = new Pool({
+        connectionString: dbUrl,
+        ssl: {
+          rejectUnauthorized: false
+        },
+        connectionTimeoutMillis: 5000 // 5 seconds timeout
+      });
 
-    client.release();
-    dbStatus.connected = true;
-    dbStatus.mode = "postgres";
-    dbStatus.error = null;
-    console.log("Database schema initialized and verified.");
-  } catch (err: any) {
-    console.error("Failed to connect or initialize Neon database. Falling back to local memory storage mode.", err.message);
-    dbStatus.connected = false;
-    dbStatus.mode = "fallback";
-    dbStatus.error = err.message;
-  }
+      // Test query
+      const client = await pool.connect();
+      console.log("Successfully connected to Neon PostgreSQL database!");
+      
+      // Create tables if they do not exist
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS foco_tasks (
+          id SERIAL PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          category VARCHAR(100) NOT NULL,
+          due_date DATE NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          completed BOOLEAN DEFAULT FALSE,
+          current_progress INTEGER DEFAULT 0
+        );
+      `);
+
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS foco_milestones (
+          id SERIAL PRIMARY KEY,
+          task_id INTEGER REFERENCES foco_tasks(id) ON DELETE CASCADE,
+          date_string VARCHAR(10) NOT NULL,
+          label VARCHAR(100) NOT NULL,
+          target_progress INTEGER NOT NULL,
+          description VARCHAR(255),
+          completed BOOLEAN DEFAULT FALSE
+        );
+      `);
+
+      client.release();
+      dbStatus.connected = true;
+      dbStatus.mode = "postgres";
+      dbStatus.error = null;
+      console.log("Database schema initialized and verified.");
+    } catch (err: any) {
+      console.error("Failed to connect or initialize Neon database. Falling back to local memory storage mode.", err.message);
+      dbStatus.connected = false;
+      dbStatus.mode = "fallback";
+      dbStatus.error = err.message;
+    } finally {
+      initPromise = null;
+    }
+  })();
+
+  return initPromise;
 }
 
 initDatabase();
