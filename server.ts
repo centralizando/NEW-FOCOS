@@ -12,8 +12,7 @@ const PORT = 3000;
 app.use(express.json());
 
 // Neon DB Connection details
-const DEFAULT_DATABASE_URL = "postgresql://neondb_owner:npg_b5VCnMmgcBO6@ep-noisy-night-atqopup7-pooler.c-9.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require";
-const dbUrl = process.env.DATABASE_URL || DEFAULT_DATABASE_URL;
+const dbUrl = "postgresql://neondb_owner:npg_b5VCnMmgcBO6@ep-noisy-night-atqopup7-pooler.c-9.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require";
 
 let dbStatus = {
   connected: false,
@@ -119,6 +118,17 @@ async function initDatabase() {
 }
 
 initDatabase();
+
+// Auto-reconnect middleware for Serverless environment resilience
+app.use(async (req, res, next) => {
+  if (req.path.startsWith("/api/") && req.path !== "/api/db-status" && req.path !== "/api/db-reconnect") {
+    if (!dbStatus.connected || dbStatus.mode !== "postgres" || !pool) {
+      console.log("Lazy-initializing database connection for path:", req.path);
+      await initDatabase();
+    }
+  }
+  next();
+});
 
 // API Endpoints
 

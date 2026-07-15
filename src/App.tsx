@@ -100,7 +100,7 @@ export default function App() {
 
   useEffect(() => {
     fetchData();
-  }, [dbStatus.mode]);
+  }, []);
 
   // Attempt database reconnection
   const handleReconnect = async () => {
