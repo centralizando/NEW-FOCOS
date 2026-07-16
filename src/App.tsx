@@ -364,12 +364,26 @@ export default function App() {
   const completedMilestonesCount = tasks.reduce((acc, t) => acc + (t.milestones?.filter(m => m.completed).length || 0), 0);
   const progressRatio = totalMilestonesCount > 0 ? Math.round((completedMilestonesCount / totalMilestonesCount) * 100) : 0;
 
+  // Format current weekday and date in dd/mm/yy format for header subtitle
+  const getHeaderDateString = () => {
+    const weekday = currentTime.toLocaleDateString("pt-BR", { weekday: "long" });
+    const capitalizedWeekday = weekday.charAt(0).toUpperCase() + weekday.slice(1);
+    
+    const day = String(currentTime.getDate()).padStart(2, "0");
+    const month = String(currentTime.getMonth() + 1).padStart(2, "0");
+    const year = String(currentTime.getFullYear()).slice(-2);
+    
+    return `${capitalizedWeekday}, ${day}/${month}/${year}`;
+  };
+
+  const headerDateStr = getHeaderDateString();
+
   return (
-    <div className="min-h-screen bg-art-cream text-art-dark flex flex-col selection:bg-art-orange selection:text-white font-sans" id="foco-app">
+    <div className="min-h-screen w-full overflow-x-hidden bg-art-cream text-art-dark flex flex-col selection:bg-art-orange selection:text-white font-sans" id="foco-app">
       
       {/* Top Banner (Only if Fallback Mode to keep user informed) */}
       {dbStatus.mode === "fallback" && (
-        <div className="bg-amber-100 border-b border-art-dark px-6 py-3 flex flex-col sm:flex-row items-center justify-between text-xs text-amber-900 gap-3" id="fallback-banner">
+        <div className="bg-amber-100 border-b border-art-dark px-4 sm:px-10 py-3 flex flex-col sm:flex-row items-center justify-between text-xs text-amber-900 gap-3" id="fallback-banner">
           <div className="flex items-center gap-2">
             <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0" />
             <span>
@@ -388,7 +402,7 @@ export default function App() {
       )}
 
       {/* Main Header */}
-      <header className="border-b border-art-dark bg-white px-6 sm:px-10 py-5 flex flex-col md:flex-row md:items-center justify-between gap-6" id="header">
+      <header className="border-b border-art-dark bg-white px-4 sm:px-10 py-5 flex flex-col md:flex-row md:items-center justify-between gap-6" id="header">
         <div className="flex items-center gap-4">
           <div className="bg-art-orange text-white p-3 border border-art-dark shadow-[2px_2px_0px_0px_rgba(26,26,26,1)]">
             <Target className="w-6 h-6" />
@@ -398,7 +412,7 @@ export default function App() {
               <h1 className="font-serif italic text-4xl font-extrabold tracking-tight text-art-dark">FOCO</h1>
               <span className="text-[10px] uppercase font-mono tracking-widest bg-art-dark text-white px-2 py-0.5 font-bold">v1.1</span>
             </div>
-            <p className="text-xs uppercase tracking-widest text-slate-500 font-semibold mt-0.5">Micro-metas planejadas para entregas sem estresse</p>
+            <p className="text-lg sm:text-2xl font-black text-art-dark tracking-tight mt-1">{headerDateStr}</p>
           </div>
         </div>
 
@@ -427,7 +441,7 @@ export default function App() {
       </header>
 
       {/* Stats Summary Bento Section */}
-      <section className="px-6 sm:px-10 pt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" id="stats-section">
+      <section className="px-4 sm:px-10 pt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" id="stats-section">
         
         {/* Total Progress */}
         <div className="bg-white border border-art-dark p-5 shadow-[4px_4px_0px_rgba(26,26,26,1)] flex items-center justify-between relative overflow-hidden group">
@@ -492,10 +506,10 @@ export default function App() {
       </section>
 
       {/* Tab Navigation Menu */}
-      <div className="px-6 sm:px-10 pt-8 flex gap-2 border-b border-art-dark" id="tabs-navigation">
+      <div className="px-4 sm:px-10 pt-8 flex gap-2 border-b border-art-dark overflow-x-auto scrollbar-none flex-nowrap" id="tabs-navigation">
         <button 
           onClick={() => setActiveTab("hoje")}
-          className={`px-5 py-3 border-t border-l border-r font-bold text-xs uppercase tracking-wider transition-all relative ${
+          className={`px-5 py-3 border-t border-l border-r font-bold text-xs uppercase tracking-wider transition-all relative shrink-0 ${
             activeTab === "hoje" 
               ? "border-art-dark bg-white text-art-dark -mb-[1px] font-black" 
               : "border-transparent text-slate-500 hover:text-art-dark hover:bg-white/50"
@@ -514,7 +528,7 @@ export default function App() {
 
         <button 
           onClick={() => setActiveTab("todas")}
-          className={`px-5 py-3 border-t border-l border-r font-bold text-xs uppercase tracking-wider transition-all relative ${
+          className={`px-5 py-3 border-t border-l border-r font-bold text-xs uppercase tracking-wider transition-all relative shrink-0 ${
             activeTab === "todas" 
               ? "border-art-dark bg-white text-art-dark -mb-[1px] font-black" 
               : "border-transparent text-slate-500 hover:text-art-dark hover:bg-white/50"
@@ -528,7 +542,7 @@ export default function App() {
 
         <button 
           onClick={() => setActiveTab("novo")}
-          className={`px-5 py-3 border-t border-l border-r font-bold text-xs uppercase tracking-wider transition-all relative ${
+          className={`px-5 py-3 border-t border-l border-r font-bold text-xs uppercase tracking-wider transition-all relative shrink-0 ${
             activeTab === "novo" 
               ? "border-art-dark bg-white text-art-orange -mb-[1px] font-black" 
               : "border-transparent text-art-orange hover:text-art-orange hover:bg-white/50"
@@ -542,7 +556,7 @@ export default function App() {
       </div>
 
       {/* Main Content Area */}
-      <main className="flex-1 p-6 sm:p-10" id="main-content">
+      <main className="flex-1 p-4 sm:p-10" id="main-content">
         <AnimatePresence mode="wait">
           {loading && tasks.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 gap-4" id="loading-state">
@@ -1018,7 +1032,7 @@ export default function App() {
                                     setCustomMilestones(updated);
                                   }}
                                   placeholder="Editar descrição"
-                                  className="bg-white border border-art-dark px-2 py-1 text-[11px] text-art-dark w-48 sm:w-64 focus:outline-none focus:border-art-orange rounded-none"
+                                  className="bg-white border border-art-dark px-2 py-1 text-[11px] text-art-dark w-full sm:w-64 flex-1 min-w-[150px] focus:outline-none focus:border-art-orange rounded-none"
                                 />
                                 <div className="flex items-center gap-1">
                                   <input 
@@ -1064,7 +1078,7 @@ export default function App() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-art-dark bg-white px-6 sm:px-10 py-6 text-center text-xs text-slate-500 space-y-2 mt-auto" id="footer">
+      <footer className="border-t border-art-dark bg-white px-4 sm:px-10 py-6 text-center text-xs text-slate-500 space-y-2 mt-auto" id="footer">
         <p className="font-mono uppercase tracking-wider text-[10px] text-art-dark font-bold">
           <strong>FOCO</strong> — Gerenciador Inteligente de Metas Progressivas. 2026.
         </p>
