@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { 
   Check, 
   Plus, 
@@ -19,7 +19,9 @@ import {
   ArrowRight,
   Flame,
   Award,
-  Sparkles
+  Sparkles,
+  Briefcase,
+  Home
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { Task, Milestone, DbStatus } from "./types";
@@ -35,6 +37,12 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"hoje" | "todas" | "novo">("hoje");
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
+  const [draggedId, setDraggedId] = useState<number | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string>(() => {
+    const tzoffset = (new Date()).getTimezoneOffset() * 60000;
+    return (new Date(Date.now() - tzoffset)).toISOString().slice(0, 10);
+  });
+  const dateInputRef = useRef<HTMLInputElement>(null);
 
   // Form States for creating task
   const [taskName, setTaskName] = useState("");
@@ -320,6 +328,65 @@ export default function App() {
     }
   };
 
+  // Update milestone location (casa vs trabalho)
+  const handleUpdateMilestoneLocation = async (milestoneId: number, newLocation: 'casa' | 'trabalho') => {
+    try {
+      const res = await fetch(`/api/milestones/${milestoneId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ location: newLocation })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setTasks(prev => {
+          const updated = prev.map(t => {
+            if (t.id === data.task_id) {
+              const updatedMilestones = t.milestones?.map(m => {
+                if (m.id === milestoneId) {
+                  return { ...m, location: newLocation };
+                }
+                return m;
+              });
+              return {
+                ...t,
+                milestones: updatedMilestones
+              };
+            }
+            return t;
+          });
+
+          if (dbStatus.mode === "fallback") {
+            localStorage.setItem("foco_tasks_backup", JSON.stringify(updated));
+          }
+          return updated;
+        });
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDragStart = (e: React.DragEvent, milestoneId: number) => {
+    e.dataTransfer.setData("text/plain", String(milestoneId));
+    setDraggedId(milestoneId);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = async (e: React.DragEvent, targetLocation: 'casa' | 'trabalho') => {
+    e.preventDefault();
+    const idStr = e.dataTransfer.getData("text/plain") || String(draggedId);
+    if (!idStr) return;
+    const milestoneId = parseInt(idStr);
+    if (isNaN(milestoneId)) return;
+    
+    await handleUpdateMilestoneLocation(milestoneId, targetLocation);
+    setDraggedId(null);
+  };
+
   // Format Date to Friendly Local Format
   const formatDateFriendly = (dateStr: string) => {
     if (!dateStr) return "";
@@ -336,13 +403,13 @@ export default function App() {
 
   const todayStr = getTodayDateString();
 
-  // Filter milestones due today
+  // Filter milestones due today/selected day
   const getTodaysMilestones = () => {
     const todays: { milestone: Milestone; taskName: string; category: string }[] = [];
     tasks.forEach(t => {
       if (t.milestones) {
         t.milestones.forEach(m => {
-          if (m.date_string === todayStr) {
+          if (m.date_string === selectedDate) {
             todays.push({
               milestone: m,
               taskName: t.name,
@@ -580,13 +647,50 @@ export default function App() {
                     <div className="flex items-center justify-between border-b border-art-dark pb-3">
                       <div>
                         <h2 className="text-2xl font-serif italic font-bold text-art-dark flex items-center gap-2">
-                          Metas para Hoje
+                          {selectedDate === todayStr ? "Metas para Hoje" : "Metas de Foco"}
                         </h2>
-                        <p className="text-xs text-slate-500 mt-1">Micro-passos planejados para entregar no prazo sem correria</p>
+                        <p className="text-xs text-slate-500 mt-1 font-sans">
+                          {selectedDate === todayStr 
+                            ? "Micro-passos planejados para entregar no prazo sem correria" 
+                            : `Planejamento de micro-passos para o dia ${formatDateFriendly(selectedDate)}`}
+                        </p>
                       </div>
-                      <span className="text-xs bg-white border border-art-dark px-3 py-1 font-mono text-art-dark shadow-[1px_1px_0px_rgba(26,26,26,1)]">
-                        {todayStr}
-                      </span>
+                      <div className="relative flex items-center" id="date-picker-container">
+                        <button 
+                          onClick={() => {
+                            if (dateInputRef.current) {
+                              try {
+                                dateInputRef.current.showPicker();
+                              } catch (err) {
+                                try {
+                                  dateInputRef.current.click();
+                                } catch (clickErr) {
+                                  dateInputRef.current.focus();
+                                }
+                              }
+                            }
+                          }}
+                          className="text-xs bg-white hover:bg-art-soft-orange border border-art-dark px-3 py-1.5 font-mono text-art-dark font-bold shadow-[1px_1px_0px_rgba(26,26,26,1)] hover:shadow-[2px_2px_0px_rgba(26,26,26,1)] flex items-center gap-1.5 transition-all active:translate-x-[0.5px] active:translate-y-[0.5px] active:shadow-none select-none"
+                        >
+                          <Calendar className="w-3.5 h-3.5 text-art-orange shrink-0" />
+                          <span>{formatDateFriendly(selectedDate)}</span>
+                          {selectedDate === todayStr && (
+                            <span className="ml-1 px-1 bg-art-dark text-white text-[9px] uppercase font-sans font-black tracking-wider leading-none py-0.5">Hoje</span>
+                          )}
+                        </button>
+                        <input 
+                          ref={dateInputRef}
+                          type="date" 
+                          value={selectedDate} 
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              setSelectedDate(e.target.value);
+                            }
+                          }} 
+                          className="absolute inset-0 opacity-0 pointer-events-none w-full h-full"
+                          title="Clique para escolher outro dia"
+                        />
+                      </div>
                     </div>
 
                     {todaysMilestones.length === 0 ? (
@@ -595,65 +699,203 @@ export default function App() {
                           <Sparkles className="w-6 h-6" />
                         </div>
                         <div>
-                          <p className="text-sm font-bold text-art-dark uppercase tracking-wider">Sem metas para hoje!</p>
+                          <p className="text-sm font-bold text-art-dark uppercase tracking-wider">
+                            {selectedDate === todayStr ? "Sem metas para hoje!" : "Sem metas para este dia!"}
+                          </p>
                           <p className="text-xs text-slate-500 mt-2 max-w-sm mx-auto leading-relaxed">
-                            Excelente! Que tal criar uma nova tarefa e deixar o FOCO configurar as micro-metas diárias graduais?
+                            {selectedDate === todayStr 
+                              ? "Excelente! Que tal criar uma nova tarefa e deixar o FOCO configurar as micro-metas diárias graduais?"
+                              : "Nenhuma meta programada para esta data. Use o botão acima para escolher outro dia ou crie uma nova tarefa!"}
                           </p>
                         </div>
                         <button 
-                          onClick={() => setActiveTab("novo")}
+                          onClick={() => {
+                            if (selectedDate !== todayStr) {
+                              setSelectedDate(todayStr);
+                            } else {
+                              setActiveTab("novo");
+                            }
+                          }}
                           className="text-xs font-bold bg-art-orange hover:bg-art-dark text-white border border-art-dark px-5 py-2.5 uppercase tracking-widest transition"
                         >
-                          Planejar Nova Tarefa
+                          {selectedDate !== todayStr ? "Voltar para Hoje" : "Planejar Nova Tarefa"}
                         </button>
                       </div>
                     ) : (
-                      <div className="space-y-4">
-                        {todaysMilestones.map(({ milestone, taskName, category }) => (
-                          <div 
-                            key={milestone.id}
-                            className={`p-5 border transition-all duration-300 bg-white ${
-                              milestone.completed 
-                                ? "border-art-dark opacity-60 bg-[#F2F1EA] shadow-none" 
-                                : "border-art-dark shadow-[3px_3px_0px_rgba(26,26,26,1)] hover:shadow-[4px_4px_0px_rgba(26,26,26,1)]"
-                            }`}
-                          >
-                            <div className="flex items-start gap-4">
-                              {/* Large Crisp Square Checkbox */}
-                              <button 
-                                onClick={() => handleToggleMilestone(milestone.id, milestone.completed)}
-                                className={`w-7 h-7 border-2 border-art-dark flex items-center justify-center transition-all shrink-0 mt-0.5 ${
-                                  milestone.completed 
-                                    ? "bg-art-dark text-white" 
-                                    : "bg-[#F9F8F3] text-transparent hover:bg-art-soft-orange"
-                                }`}
-                              >
-                                <Check className="w-5 h-5 stroke-[3]" />
-                              </button>
-
-                              {/* Milestone Content */}
-                              <div className="flex-1 space-y-2">
-                                <div className="flex items-center justify-between gap-2 flex-wrap">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-[9px] font-bold tracking-widest uppercase px-2 py-0.5 border border-art-dark bg-[#FFFAF0] text-art-orange">
-                                      {category}
-                                    </span>
-                                    <span className="text-xs font-mono text-slate-500">Tarefa: {taskName}</span>
-                                  </div>
-
-                                  {/* Target tag */}
-                                  <div className="flex items-center gap-1 bg-[#F9F8F3] border border-art-dark px-2 py-0.5 text-[10px] font-mono text-art-dark font-bold">
-                                    Meta: {milestone.target_progress}%
-                                  </div>
-                                </div>
-
-                                <p className={`text-sm font-serif italic font-bold transition-all ${milestone.completed ? "text-slate-500 line-through font-normal" : "text-art-dark"}`}>
-                                  {milestone.label}: {milestone.description}
-                                </p>
-                              </div>
-                            </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        
+                        {/* TRABALHO LIST */}
+                        <div 
+                          onDragOver={handleDragOver}
+                          onDrop={(e) => handleDrop(e, 'trabalho')}
+                          className={`p-4 border-2 transition-all duration-200 bg-white min-h-[350px] flex flex-col ${
+                            draggedId !== null 
+                              ? "border-dashed border-art-orange bg-art-soft-orange/10 scale-[1.01]" 
+                              : "border-art-dark bg-[#F2F4F7]"
+                          } shadow-[4px_4px_0px_rgba(26,26,26,1)]`}
+                        >
+                          <div className="flex items-center justify-between mb-4 border-b border-art-dark pb-2">
+                            <h3 className="font-serif italic font-bold text-base text-art-dark flex items-center gap-2">
+                              <Briefcase className="w-4 h-4 text-art-orange shrink-0" />
+                              Realizar no Trabalho
+                            </h3>
+                            <span className="text-xs font-mono bg-art-dark text-white px-2 py-0.5 font-bold">
+                              {todaysMilestones.filter(m => m.milestone.location === 'trabalho').length}
+                            </span>
                           </div>
-                        ))}
+
+                          <div className="space-y-3 flex-1">
+                            {todaysMilestones.filter(m => m.milestone.location === 'trabalho').length === 0 ? (
+                              <div className="py-12 px-4 text-center border border-dashed border-slate-300 bg-white/70 text-slate-500 text-xs flex flex-col items-center justify-center gap-2 h-full min-h-[200px]">
+                                <p className="font-bold">Nada no trabalho hoje</p>
+                                <p className="text-[10px] text-slate-400">Arraste uma atividade de hoje para cá ou clique em "Leva pro Trabalho" nos cards de casa.</p>
+                              </div>
+                            ) : (
+                              todaysMilestones
+                                .filter(m => m.milestone.location === 'trabalho')
+                                .map(({ milestone, taskName, category }) => (
+                                  <div 
+                                    key={milestone.id}
+                                    draggable={true}
+                                    onDragStart={(e) => handleDragStart(e, milestone.id)}
+                                    className={`p-4 border-2 transition-all duration-300 bg-white cursor-grab active:cursor-grabbing group relative ${
+                                      milestone.completed 
+                                        ? "border-art-dark/40 opacity-60 bg-[#F2F1EA] shadow-none" 
+                                        : "border-art-dark shadow-[2px_2px_0px_rgba(26,26,26,1)] hover:shadow-[3px_3px_0px_rgba(26,26,26,1)]"
+                                    }`}
+                                  >
+                                    <div className="flex items-start gap-3">
+                                      <button 
+                                        onClick={() => handleToggleMilestone(milestone.id, milestone.completed)}
+                                        className={`w-6 h-6 border-2 border-art-dark flex items-center justify-center transition-all shrink-0 mt-0.5 ${
+                                          milestone.completed 
+                                            ? "bg-art-dark text-white" 
+                                            : "bg-[#F9F8F3] text-transparent hover:bg-art-soft-orange"
+                                        }`}
+                                      >
+                                        <Check className="w-4 h-4 stroke-[3]" />
+                                      </button>
+
+                                      <div className="flex-1 space-y-1.5 min-w-0">
+                                        <div className="flex items-center justify-between gap-1 flex-wrap">
+                                          <span className="text-[8px] font-bold tracking-widest uppercase px-1.5 py-0.2 border border-art-dark bg-[#FFFAF0] text-art-orange">
+                                            {category}
+                                          </span>
+                                          <span className="text-[10px] font-mono text-slate-500 truncate max-w-[120px]">Tarefa: {taskName}</span>
+                                        </div>
+
+                                        <p className={`text-xs font-serif italic font-bold leading-snug transition-all break-words ${milestone.completed ? "text-slate-500 line-through font-normal" : "text-art-dark"}`}>
+                                          {milestone.label}: {milestone.description}
+                                        </p>
+
+                                        {/* Move Action Button */}
+                                        <div className="pt-1 flex items-center justify-between gap-2">
+                                          <span className="text-[9px] bg-[#F9F8F3] border border-art-dark px-1.5 py-0.2 font-mono text-art-dark font-bold">
+                                            {milestone.target_progress}%
+                                          </span>
+                                          <button
+                                            onClick={() => handleUpdateMilestoneLocation(milestone.id, 'casa')}
+                                            title="Mudar para Casa"
+                                            className="text-[9px] font-bold font-mono uppercase bg-[#E8F5E9] hover:bg-art-orange hover:text-white border border-art-dark px-2 py-0.5 flex items-center gap-1 transition shadow-[1px_1px_0px_rgba(26,26,26,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+                                          >
+                                            <Home className="w-2.5 h-2.5 text-emerald-700" />
+                                            Traz pra Casa
+                                          </button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))
+                            )}
+                          </div>
+                        </div>
+
+                        {/* CASA LIST */}
+                        <div 
+                          onDragOver={handleDragOver}
+                          onDrop={(e) => handleDrop(e, 'casa')}
+                          className={`p-4 border-2 transition-all duration-200 bg-white min-h-[350px] flex flex-col ${
+                            draggedId !== null 
+                              ? "border-dashed border-art-orange bg-art-soft-orange/10 scale-[1.01]" 
+                              : "border-art-dark bg-[#FAFAFA]"
+                          } shadow-[4px_4px_0px_rgba(26,26,26,1)]`}
+                        >
+                          <div className="flex items-center justify-between mb-4 border-b border-art-dark pb-2">
+                            <h3 className="font-serif italic font-bold text-base text-art-dark flex items-center gap-2">
+                              <Home className="w-4 h-4 text-art-orange shrink-0" />
+                              Realizar em Casa
+                            </h3>
+                            <span className="text-xs font-mono bg-art-dark text-white px-2 py-0.5 font-bold">
+                              {todaysMilestones.filter(m => !m.milestone.location || m.milestone.location === 'casa').length}
+                            </span>
+                          </div>
+
+                          <div className="space-y-3 flex-1">
+                            {todaysMilestones.filter(m => !m.milestone.location || m.milestone.location === 'casa').length === 0 ? (
+                              <div className="py-12 px-4 text-center border border-dashed border-slate-300 bg-white/70 text-slate-500 text-xs flex flex-col items-center justify-center gap-2 h-full min-h-[200px]">
+                                <p className="font-bold">Nada em casa hoje</p>
+                                <p className="text-[10px] text-slate-400">Arraste uma atividade de hoje para cá ou use "Traz pra Casa" nos cards do trabalho.</p>
+                              </div>
+                            ) : (
+                              todaysMilestones
+                                .filter(m => !m.milestone.location || m.milestone.location === 'casa')
+                                .map(({ milestone, taskName, category }) => (
+                                  <div 
+                                    key={milestone.id}
+                                    draggable={true}
+                                    onDragStart={(e) => handleDragStart(e, milestone.id)}
+                                    className={`p-4 border-2 transition-all duration-300 bg-white cursor-grab active:cursor-grabbing group relative ${
+                                      milestone.completed 
+                                        ? "border-art-dark/40 opacity-60 bg-[#F2F1EA] shadow-none" 
+                                        : "border-art-dark shadow-[2px_2px_0px_rgba(26,26,26,1)] hover:shadow-[3px_3px_0px_rgba(26,26,26,1)]"
+                                    }`}
+                                  >
+                                    <div className="flex items-start gap-3">
+                                      <button 
+                                        onClick={() => handleToggleMilestone(milestone.id, milestone.completed)}
+                                        className={`w-6 h-6 border-2 border-art-dark flex items-center justify-center transition-all shrink-0 mt-0.5 ${
+                                          milestone.completed 
+                                            ? "bg-art-dark text-white" 
+                                            : "bg-[#F9F8F3] text-transparent hover:bg-art-soft-orange"
+                                        }`}
+                                      >
+                                        <Check className="w-4 h-4 stroke-[3]" />
+                                      </button>
+
+                                      <div className="flex-1 space-y-1.5 min-w-0">
+                                        <div className="flex items-center justify-between gap-1 flex-wrap">
+                                          <span className="text-[8px] font-bold tracking-widest uppercase px-1.5 py-0.2 border border-art-dark bg-[#FFFAF0] text-art-orange">
+                                            {category}
+                                          </span>
+                                          <span className="text-[10px] font-mono text-slate-500 truncate max-w-[120px]">Tarefa: {taskName}</span>
+                                        </div>
+
+                                        <p className={`text-xs font-serif italic font-bold leading-snug transition-all break-words ${milestone.completed ? "text-slate-500 line-through font-normal" : "text-art-dark"}`}>
+                                          {milestone.label}: {milestone.description}
+                                        </p>
+
+                                        {/* Move Action Button */}
+                                        <div className="pt-1 flex items-center justify-between gap-2">
+                                          <span className="text-[9px] bg-[#F9F8F3] border border-art-dark px-1.5 py-0.2 font-mono text-art-dark font-bold">
+                                            {milestone.target_progress}%
+                                          </span>
+                                          <button
+                                            onClick={() => handleUpdateMilestoneLocation(milestone.id, 'trabalho')}
+                                            title="Mudar para Trabalho"
+                                            className="text-[9px] font-bold font-mono uppercase bg-[#FFEFC6] hover:bg-art-orange hover:text-white border border-art-dark px-2 py-0.5 flex items-center gap-1 transition shadow-[1px_1px_0px_rgba(26,26,26,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+                                          >
+                                            <Briefcase className="w-2.5 h-2.5 text-amber-700" />
+                                            Leva pro Trabalho
+                                          </button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))
+                            )}
+                          </div>
+                        </div>
+
                       </div>
                     )}
                   </div>

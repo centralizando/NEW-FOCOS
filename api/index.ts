@@ -116,6 +116,11 @@ async function initDatabase() {
         );
       `);
 
+      // Add location column to allow splitting today's tasks into 'casa' vs 'trabalho'
+      await client.query(`
+        ALTER TABLE foco_milestones ADD COLUMN IF NOT EXISTS location VARCHAR(20) DEFAULT 'casa';
+      `);
+
       client.release();
       dbStatus.connected = true;
       dbStatus.mode = "postgres";
@@ -183,7 +188,8 @@ app.get("/api/tasks", async (req, res) => {
             .filter(m => m.task_id === task.id)
             .map(m => ({
               ...m,
-              target_progress: Number(m.target_progress)
+              target_progress: Number(m.target_progress),
+              location: m.location || 'casa'
             }))
         };
       });
@@ -380,13 +386,13 @@ app.delete("/api/tasks/:id", async (req, res) => {
   }
 });
 
-// PUT update a specific milestone (completion status) and recalculate task progress
+// PUT update a specific milestone (completion status and/or location) and recalculate task progress
 app.put("/api/milestones/:id", async (req, res) => {
   const milestoneId = parseInt(req.params.id);
-  const { completed } = req.body;
+  const { completed, location } = req.body;
 
-  if (completed === undefined) {
-    res.status(400).json({ error: "Completed status is required." });
+  if (completed === undefined && location === undefined) {
+    res.status(400).json({ error: "Completed status or location is required." });
     return;
   }
 
@@ -397,10 +403,20 @@ app.put("/api/milestones/:id", async (req, res) => {
         await client.query("BEGIN");
 
         // 1. Update the milestone
-        const msUpdate = await client.query(
-          "UPDATE foco_milestones SET completed = $1 WHERE id = $2 RETURNING *",
-          [completed, milestoneId]
-        );
+        let queryStr = "";
+        let queryParams = [];
+        if (completed !== undefined && location !== undefined) {
+          queryStr = "UPDATE foco_milestones SET completed = $1, location = $2 WHERE id = $3 RETURNING *";
+          queryParams = [completed, location, milestoneId];
+        } else if (completed !== undefined) {
+          queryStr = "UPDATE foco_milestones SET completed = $1 WHERE id = $2 RETURNING *";
+          queryParams = [completed, milestoneId];
+        } else {
+          queryStr = "UPDATE foco_milestones SET location = $1 WHERE id = $2 RETURNING *";
+          queryParams = [location, milestoneId];
+        }
+
+        const msUpdate = await client.query(queryStr, queryParams);
 
         if (msUpdate.rows.length === 0) {
           await client.query("ROLLBACK");
@@ -419,13 +435,10 @@ app.put("/api/milestones/:id", async (req, res) => {
         const milestones = allMilestonesResult.rows;
 
         // Smart progress logic:
-        // Let's find the maximum target_progress of the completed milestones
         const completedMilestones = milestones.filter(m => m.completed);
         let calculatedProgress = 0;
         
         if (completedMilestones.length > 0) {
-          // Progress can be set to the highest completed milestone's target progress,
-          // or calculated proportionally. Let's use the highest completed milestone's progress targets!
           calculatedProgress = Math.max(...completedMilestones.map(m => Number(m.target_progress)));
         }
 
@@ -439,7 +452,11 @@ app.put("/api/milestones/:id", async (req, res) => {
         await client.query("COMMIT");
 
         res.json({
-          milestone: updatedMilestone,
+          milestone: {
+            ...updatedMilestone,
+            target_progress: Number(updatedMilestone.target_progress),
+            location: updatedMilestone.location || 'casa'
+          },
           task_id: taskId,
           new_progress: calculatedProgress,
           completed: isTaskFullyCompleted
@@ -453,14 +470,15 @@ app.put("/api/milestones/:id", async (req, res) => {
     } catch (err: any) {
       console.error("DB Error on PUT /api/milestones/:id, updating local state.", err);
       // Fallback
-      let foundMilestone: LocalMilestone | null = null;
-      let parentTask: LocalTask | null = null;
+      let foundMilestone: any = null;
+      let parentTask: any = null;
 
       for (const t of localTasks) {
         if (t.milestones) {
           const ms = t.milestones.find(m => m.id === milestoneId);
           if (ms) {
-            ms.completed = completed;
+            if (completed !== undefined) ms.completed = completed;
+            if (location !== undefined) (ms as any).location = location;
             foundMilestone = ms;
             parentTask = t;
             break;
@@ -492,14 +510,15 @@ app.put("/api/milestones/:id", async (req, res) => {
     }
   } else {
     // Fallback
-    let foundMilestone: LocalMilestone | null = null;
-    let parentTask: LocalTask | null = null;
+    let foundMilestone: any = null;
+    let parentTask: any = null;
 
     for (const t of localTasks) {
       if (t.milestones) {
         const ms = t.milestones.find(m => m.id === milestoneId);
         if (ms) {
-          ms.completed = completed;
+          if (completed !== undefined) ms.completed = completed;
+          if (location !== undefined) (ms as any).location = location;
           foundMilestone = ms;
           parentTask = t;
           break;

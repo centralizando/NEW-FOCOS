@@ -6,6 +6,7 @@ export interface Milestone {
   target_progress: number;
   description: string;
   completed: boolean;
+  location?: 'casa' | 'trabalho';
 }
 
 export interface Task {
