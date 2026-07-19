@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { 
   Check, 
   Plus, 
@@ -42,6 +42,7 @@ export default function App() {
     const tzoffset = (new Date()).getTimezoneOffset() * 60000;
     return (new Date(Date.now() - tzoffset)).toISOString().slice(0, 10);
   });
+  const dateInputRef = useRef<HTMLInputElement>(null);
 
   // Form States for creating task
   const [taskName, setTaskName] = useState("");
@@ -655,7 +656,22 @@ export default function App() {
                         </p>
                       </div>
                       <div className="relative flex items-center" id="date-picker-container">
-                        <button className="text-xs bg-white hover:bg-art-soft-orange border border-art-dark px-3 py-1.5 font-mono text-art-dark font-bold shadow-[1px_1px_0px_rgba(26,26,26,1)] hover:shadow-[2px_2px_0px_rgba(26,26,26,1)] flex items-center gap-1.5 transition-all active:translate-x-[0.5px] active:translate-y-[0.5px] active:shadow-none select-none">
+                        <button 
+                          onClick={() => {
+                            if (dateInputRef.current) {
+                              try {
+                                dateInputRef.current.showPicker();
+                              } catch (err) {
+                                try {
+                                  dateInputRef.current.click();
+                                } catch (clickErr) {
+                                  dateInputRef.current.focus();
+                                }
+                              }
+                            }
+                          }}
+                          className="text-xs bg-white hover:bg-art-soft-orange border border-art-dark px-3 py-1.5 font-mono text-art-dark font-bold shadow-[1px_1px_0px_rgba(26,26,26,1)] hover:shadow-[2px_2px_0px_rgba(26,26,26,1)] flex items-center gap-1.5 transition-all active:translate-x-[0.5px] active:translate-y-[0.5px] active:shadow-none select-none"
+                        >
                           <Calendar className="w-3.5 h-3.5 text-art-orange shrink-0" />
                           <span>{formatDateFriendly(selectedDate)}</span>
                           {selectedDate === todayStr && (
@@ -663,6 +679,7 @@ export default function App() {
                           )}
                         </button>
                         <input 
+                          ref={dateInputRef}
                           type="date" 
                           value={selectedDate} 
                           onChange={(e) => {
@@ -670,7 +687,7 @@ export default function App() {
                               setSelectedDate(e.target.value);
                             }
                           }} 
-                          className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                          className="absolute inset-0 opacity-0 pointer-events-none w-full h-full"
                           title="Clique para escolher outro dia"
                         />
                       </div>
