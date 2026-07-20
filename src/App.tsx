@@ -367,6 +367,57 @@ export default function App() {
     }
   };
 
+  // Reschedule milestone to the next day
+  const getNextDateString = (dateStr: string) => {
+    const parts = dateStr.split("-").map(Number);
+    const d = new Date(parts[0], parts[1] - 1, parts[2]);
+    d.setDate(d.getDate() + 1);
+    
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
+  const handlePostponeMilestone = async (milestoneId: number, currentDateStr: string) => {
+    try {
+      const nextDateStr = getNextDateString(currentDateStr);
+      const res = await fetch(`/api/milestones/${milestoneId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date_string: nextDateStr })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setTasks(prev => {
+          const updated = prev.map(t => {
+            if (t.id === data.task_id) {
+              const updatedMilestones = t.milestones?.map(m => {
+                if (m.id === milestoneId) {
+                  return { ...m, date_string: nextDateStr };
+                }
+                return m;
+              });
+              return {
+                ...t,
+                milestones: updatedMilestones
+              };
+            }
+            return t;
+          });
+
+          if (dbStatus.mode === "fallback") {
+            localStorage.setItem("foco_tasks_backup", JSON.stringify(updated));
+          }
+          return updated;
+        });
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const handleDragStart = (e: React.DragEvent, milestoneId: number) => {
     e.dataTransfer.setData("text/plain", String(milestoneId));
     setDraggedId(milestoneId);
@@ -793,14 +844,24 @@ export default function App() {
                                           <span className="text-[9px] bg-[#F9F8F3] border border-art-dark px-1.5 py-0.2 font-mono text-art-dark font-bold">
                                             {milestone.target_progress}%
                                           </span>
-                                          <button
-                                            onClick={() => handleUpdateMilestoneLocation(milestone.id, 'casa')}
-                                            title="Mudar para Casa"
-                                            className="text-[9px] font-bold font-mono uppercase bg-[#E8F5E9] hover:bg-art-orange hover:text-white border border-art-dark px-2 py-0.5 flex items-center gap-1 transition shadow-[1px_1px_0px_rgba(26,26,26,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
-                                          >
-                                            <Home className="w-2.5 h-2.5 text-emerald-700" />
-                                            Traz pra Casa
-                                          </button>
+                                          <div className="flex items-center gap-1.5">
+                                            <button
+                                              onClick={() => handleUpdateMilestoneLocation(milestone.id, 'casa')}
+                                              title="Mudar para Casa"
+                                              className="text-[9px] font-bold font-mono uppercase bg-[#E8F5E9] hover:bg-art-orange hover:text-white border border-art-dark px-2 py-0.5 flex items-center gap-1 transition shadow-[1px_1px_0px_rgba(26,26,26,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+                                            >
+                                              <Home className="w-2.5 h-2.5 text-emerald-700" />
+                                              Traz pra Casa
+                                            </button>
+                                            <button
+                                              onClick={() => handlePostponeMilestone(milestone.id, milestone.date_string)}
+                                              title="Levar para o próximo dia"
+                                              className="text-[9px] font-bold font-mono uppercase bg-[#E0F2FE] hover:bg-art-orange hover:text-white border border-art-dark px-2 py-0.5 flex items-center gap-1 transition shadow-[1px_1px_0px_rgba(26,26,26,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+                                            >
+                                              <ArrowRight className="w-2.5 h-2.5 text-sky-700" />
+                                              Adiar 1 Dia
+                                            </button>
+                                          </div>
                                         </div>
                                       </div>
                                     </div>
@@ -879,14 +940,24 @@ export default function App() {
                                           <span className="text-[9px] bg-[#F9F8F3] border border-art-dark px-1.5 py-0.2 font-mono text-art-dark font-bold">
                                             {milestone.target_progress}%
                                           </span>
-                                          <button
-                                            onClick={() => handleUpdateMilestoneLocation(milestone.id, 'trabalho')}
-                                            title="Mudar para Trabalho"
-                                            className="text-[9px] font-bold font-mono uppercase bg-[#FFEFC6] hover:bg-art-orange hover:text-white border border-art-dark px-2 py-0.5 flex items-center gap-1 transition shadow-[1px_1px_0px_rgba(26,26,26,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
-                                          >
-                                            <Briefcase className="w-2.5 h-2.5 text-amber-700" />
-                                            Leva pro Trabalho
-                                          </button>
+                                          <div className="flex items-center gap-1.5">
+                                            <button
+                                              onClick={() => handleUpdateMilestoneLocation(milestone.id, 'trabalho')}
+                                              title="Mudar para Trabalho"
+                                              className="text-[9px] font-bold font-mono uppercase bg-[#FFEFC6] hover:bg-art-orange hover:text-white border border-art-dark px-2 py-0.5 flex items-center gap-1 transition shadow-[1px_1px_0px_rgba(26,26,26,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+                                            >
+                                              <Briefcase className="w-2.5 h-2.5 text-amber-700" />
+                                              Leva pro Trabalho
+                                            </button>
+                                            <button
+                                              onClick={() => handlePostponeMilestone(milestone.id, milestone.date_string)}
+                                              title="Levar para o próximo dia"
+                                              className="text-[9px] font-bold font-mono uppercase bg-[#E0F2FE] hover:bg-art-orange hover:text-white border border-art-dark px-2 py-0.5 flex items-center gap-1 transition shadow-[1px_1px_0px_rgba(26,26,26,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+                                            >
+                                              <ArrowRight className="w-2.5 h-2.5 text-sky-700" />
+                                              Adiar 1 Dia
+                                            </button>
+                                          </div>
                                         </div>
                                       </div>
                                     </div>

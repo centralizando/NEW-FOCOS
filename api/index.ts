@@ -386,13 +386,13 @@ app.delete("/api/tasks/:id", async (req, res) => {
   }
 });
 
-// PUT update a specific milestone (completion status and/or location) and recalculate task progress
+// PUT update a specific milestone (completion status, location, or rescheduled date) and recalculate task progress
 app.put("/api/milestones/:id", async (req, res) => {
   const milestoneId = parseInt(req.params.id);
-  const { completed, location } = req.body;
+  const { completed, location, date_string } = req.body;
 
-  if (completed === undefined && location === undefined) {
-    res.status(400).json({ error: "Completed status or location is required." });
+  if (completed === undefined && location === undefined && date_string === undefined) {
+    res.status(400).json({ error: "Completed status, location, or date_string is required." });
     return;
   }
 
@@ -402,19 +402,26 @@ app.put("/api/milestones/:id", async (req, res) => {
       try {
         await client.query("BEGIN");
 
-        // 1. Update the milestone
-        let queryStr = "";
-        let queryParams = [];
-        if (completed !== undefined && location !== undefined) {
-          queryStr = "UPDATE foco_milestones SET completed = $1, location = $2 WHERE id = $3 RETURNING *";
-          queryParams = [completed, location, milestoneId];
-        } else if (completed !== undefined) {
-          queryStr = "UPDATE foco_milestones SET completed = $1 WHERE id = $2 RETURNING *";
-          queryParams = [completed, milestoneId];
-        } else {
-          queryStr = "UPDATE foco_milestones SET location = $1 WHERE id = $2 RETURNING *";
-          queryParams = [location, milestoneId];
+        // 1. Update the milestone dynamically
+        const fields = [];
+        const queryParams = [];
+        let paramIndex = 1;
+
+        if (completed !== undefined) {
+          fields.push(`completed = $${paramIndex++}`);
+          queryParams.push(completed);
         }
+        if (location !== undefined) {
+          fields.push(`location = $${paramIndex++}`);
+          queryParams.push(location);
+        }
+        if (date_string !== undefined) {
+          fields.push(`date_string = $${paramIndex++}`);
+          queryParams.push(date_string);
+        }
+
+        queryParams.push(milestoneId);
+        const queryStr = `UPDATE foco_milestones SET ${fields.join(", ")} WHERE id = $${paramIndex} RETURNING *`;
 
         const msUpdate = await client.query(queryStr, queryParams);
 
@@ -479,6 +486,7 @@ app.put("/api/milestones/:id", async (req, res) => {
           if (ms) {
             if (completed !== undefined) ms.completed = completed;
             if (location !== undefined) (ms as any).location = location;
+            if (date_string !== undefined) ms.date_string = date_string;
             foundMilestone = ms;
             parentTask = t;
             break;
@@ -519,6 +527,7 @@ app.put("/api/milestones/:id", async (req, res) => {
         if (ms) {
           if (completed !== undefined) ms.completed = completed;
           if (location !== undefined) (ms as any).location = location;
+          if (date_string !== undefined) ms.date_string = date_string;
           foundMilestone = ms;
           parentTask = t;
           break;
