@@ -582,9 +582,10 @@ export default function App() {
         <div className="bg-white border border-art-dark p-3 sm:p-4 shadow-[4px_4px_0px_rgba(26,26,26,1)] max-w-3xl mx-auto flex flex-col items-center justify-center">
           <div className="w-full relative overflow-hidden aspect-video border border-art-dark bg-black">
             <iframe 
-              src="https://drive.google.com/file/d/1UJTd1zVTgBV-xnGzgIuMIz_QWxRbKHEr/preview" 
+              src="https://streamable.com/e/yv7768?autoplay=1&loop=0" 
               className="w-full h-full border-0"
-              allow="autoplay"
+              allow="fullscreen; autoplay"
+              allowFullScreen
               title="Vídeo FOCO"
             ></iframe>
           </div>
