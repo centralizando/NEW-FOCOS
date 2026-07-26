@@ -582,13 +582,16 @@ export default function App() {
         <div className="bg-white border border-art-dark p-3 sm:p-4 shadow-[4px_4px_0px_rgba(26,26,26,1)] max-w-3xl mx-auto flex flex-col items-center justify-center">
           <div className="w-full relative overflow-hidden aspect-video border border-art-dark bg-black">
             <iframe 
-              src="https://streamable.com/e/yv7768?autoplay=1&loop=0" 
+              src="https://streamable.com/e/lq5cr2?loop=0" 
               className="w-full h-full border-0"
-              allow="fullscreen; autoplay"
+              allow="fullscreen"
               allowFullScreen
               title="Vídeo FOCO"
             ></iframe>
           </div>
+          <p className="mt-3 text-center font-serif italic text-sm text-slate-700 tracking-wide leading-relaxed">
+            "I knew I had to make a change. Step by step, I rebuilt my world. Until I reached the ultimate goal."
+          </p>
         </div>
       </section>
 
