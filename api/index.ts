@@ -559,6 +559,34 @@ app.put("/api/milestones/:id", async (req, res) => {
   }
 });
 
+// DELETE a milestone
+app.delete("/api/milestones/:id", async (req, res) => {
+  const milestoneId = parseInt(req.params.id);
+
+  if (dbStatus.mode === "postgres" && pool) {
+    try {
+      await pool.query("DELETE FROM foco_milestones WHERE id = $1", [milestoneId]);
+      res.json({ success: true, message: `Milestone ${milestoneId} deleted.` });
+    } catch (err: any) {
+      console.error("DB Error on DELETE /api/milestones/:id", err);
+      // Fallback
+      for (const t of localTasks) {
+        if (t.milestones) {
+          t.milestones = t.milestones.filter(m => m.id !== milestoneId);
+        }
+      }
+      res.json({ success: true, message: `Milestone ${milestoneId} deleted (local).` });
+    }
+  } else {
+    for (const t of localTasks) {
+      if (t.milestones) {
+        t.milestones = t.milestones.filter(m => m.id !== milestoneId);
+      }
+    }
+    res.json({ success: true, message: `Milestone ${milestoneId} deleted (local).` });
+  }
+});
+
 
 // Configure Vite dev server or static distribution
 async function startServer() {

@@ -38,6 +38,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<"hoje" | "todas" | "novo">("hoje");
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
   const [draggedId, setDraggedId] = useState<number | null>(null);
+  const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>(() => {
     const tzoffset = (new Date()).getTimezoneOffset() * 60000;
     return (new Date(Date.now() - tzoffset)).toISOString().slice(0, 10);
@@ -266,9 +267,8 @@ export default function App() {
     }
   };
 
-  // Delete a task
-  const handleDeleteTask = async (id: number) => {
-    if (!confirm("Tem certeza que deseja remover esta tarefa?")) return;
+  // Delete a task directly
+  const confirmDeleteTask = async (id: number) => {
     try {
       const res = await fetch(`/api/tasks/${id}`, { method: "DELETE" });
       if (res.ok) {
@@ -282,7 +282,35 @@ export default function App() {
         if (selectedTaskId === id) setSelectedTaskId(null);
       }
     } catch (err) {
-      console.error(err);
+      console.error("Error deleting task:", err);
+    } finally {
+      setTaskToDelete(null);
+    }
+  };
+
+  // Delete a milestone
+  const handleDeleteMilestone = async (milestoneId: number) => {
+    try {
+      const res = await fetch(`/api/milestones/${milestoneId}`, { method: "DELETE" });
+      if (res.ok) {
+        setTasks(prev => {
+          const updated = prev.map(t => {
+            if (t.milestones?.some(m => m.id === milestoneId)) {
+              return {
+                ...t,
+                milestones: t.milestones.filter(m => m.id !== milestoneId)
+              };
+            }
+            return t;
+          });
+          if (dbStatus.mode === "fallback") {
+            localStorage.setItem("foco_tasks_backup", JSON.stringify(updated));
+          }
+          return updated;
+        });
+      }
+    } catch (err) {
+      console.error("Error deleting milestone:", err);
     }
   };
 
@@ -545,82 +573,22 @@ export default function App() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3 bg-white border border-art-dark p-3 shadow-[2px_2px_0px_0px_rgba(26,26,26,1)]" id="db-status-badge">
-            <Database className={`w-4 h-4 ${dbStatus.mode === "postgres" ? "text-art-orange" : "text-slate-400"}`} />
-            <div className="text-left text-xs">
-              <div className="font-bold uppercase tracking-wider text-[10px]">Neon Database</div>
-              <div className="flex items-center gap-1.5 text-slate-500 mt-0.5">
-                <span className={`w-2 h-2 rounded-full ${dbStatus.mode === "postgres" ? "bg-art-orange" : "bg-amber-500 animate-pulse"}`}></span>
-                <span className="font-mono text-[10px]">{dbStatus.mode === "postgres" ? "CONECTADO" : "LOCAL SAFE-MODE"}</span>
-              </div>
-            </div>
-          </div>
+
         </div>
       </header>
 
-      {/* Stats Summary Bento Section */}
-      <section className="px-4 sm:px-10 pt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" id="stats-section">
-        
-        {/* Total Progress */}
-        <div className="bg-white border border-art-dark p-5 shadow-[4px_4px_0px_rgba(26,26,26,1)] flex items-center justify-between relative overflow-hidden group">
-          <div className="space-y-1 z-10">
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Metas Concluídas</span>
-            <h3 className="text-2xl font-black font-serif italic text-art-dark">{completedMilestonesCount} / {totalMilestonesCount}</h3>
-            <p className="text-[11px] text-slate-500 font-mono">{progressRatio}% realizado</p>
-          </div>
-          <div className="relative w-12 h-12 shrink-0 z-10">
-            <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-              <path className="text-art-gray" strokeWidth="4" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-              <path className="text-art-orange transition-all duration-500" strokeWidth="4" strokeDasharray={`${progressRatio}, 100`} strokeLinecap="square" stroke="currentColor" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-            </svg>
-            <div className="absolute inset-0 flex items-center justify-center text-[10px] font-mono text-art-dark font-bold">
-              {progressRatio}%
-            </div>
+      {/* Video Section */}
+      <section className="px-4 sm:px-10 pt-8" id="stats-section">
+        <div className="bg-white border border-art-dark p-3 sm:p-4 shadow-[4px_4px_0px_rgba(26,26,26,1)] max-w-3xl mx-auto flex flex-col items-center justify-center">
+          <div className="w-full relative overflow-hidden aspect-video border border-art-dark bg-black">
+            <iframe 
+              src="https://drive.google.com/file/d/1UJTd1zVTgBV-xnGzgIuMIz_QWxRbKHEr/preview" 
+              className="w-full h-full border-0"
+              allow="autoplay"
+              title="Vídeo FOCO"
+            ></iframe>
           </div>
         </div>
-
-        {/* Active Tasks */}
-        <div className="bg-white border border-art-dark p-5 shadow-[4px_4px_0px_rgba(26,26,26,1)] flex items-center gap-4 relative overflow-hidden">
-          <div className="p-3 bg-art-gray border border-art-dark text-art-dark">
-            <ListTodo className="w-5 h-5" />
-          </div>
-          <div className="space-y-1">
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Tarefas no Radar</span>
-            <h3 className="text-2xl font-black font-serif italic text-art-dark">{totalTasks - completedTasks}</h3>
-            <p className="text-[11px] text-slate-500 font-mono">{completedTasks} entregas feitas</p>
-          </div>
-        </div>
-
-        {/* Today's Focus Ratio */}
-        <div className="bg-white border border-art-dark p-5 shadow-[4px_4px_0px_rgba(26,26,26,1)] flex items-center gap-4 relative overflow-hidden">
-          <div className="p-3 bg-art-soft-orange border border-art-dark text-art-orange">
-            <Flame className="w-5 h-5" />
-          </div>
-          <div className="space-y-1">
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Foco de Hoje</span>
-            <h3 className="text-2xl font-black font-serif italic text-art-dark">
-              {todaysMilestones.filter(m => m.milestone.completed).length} / {todaysMilestones.length}
-            </h3>
-            <p className="text-[11px] text-slate-500 font-mono">
-              {todaysMilestones.length === 0 ? "Sem metas pendentes" : "micro-metas hoje"}
-            </p>
-          </div>
-        </div>
-
-        {/* XP or Performance Level */}
-        <div className="bg-white border border-art-dark p-5 shadow-[4px_4px_0px_rgba(26,26,26,1)] flex items-center gap-4 relative overflow-hidden">
-          <div className="p-3 bg-art-gray border border-art-dark text-art-dark">
-            <Award className="w-5 h-5" />
-          </div>
-          <div className="space-y-1">
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Produtividade</span>
-            <h3 className="text-xl font-black font-serif italic text-art-dark">
-              {progressRatio > 80 ? "Altíssima" : progressRatio > 40 ? "Consistente" : totalTasks === 0 ? "Iniciando" : "Regular"}
-            </h3>
-            <p className="text-[11px] text-slate-500 font-mono">Status semanal</p>
-          </div>
-        </div>
-
       </section>
 
       {/* Tab Navigation Menu */}
@@ -691,333 +659,160 @@ export default function App() {
             >
               {/* TAB 1: HOJE (DAILY FOCUS) */}
               {activeTab === "hoje" && (
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8" id="tab-hoje">
-                  
-                  {/* Left Column: Today's Focus Action */}
-                  <div className="lg:col-span-2 space-y-6">
-                    <div className="flex items-center justify-between border-b border-art-dark pb-3">
-                      <div>
-                        <h2 className="text-2xl font-serif italic font-bold text-art-dark flex items-center gap-2">
-                          {selectedDate === todayStr ? "Metas para Hoje" : "Metas de Foco"}
-                        </h2>
-                        <p className="text-xs text-slate-500 mt-1 font-sans">
-                          {selectedDate === todayStr 
-                            ? "Micro-passos planejados para entregar no prazo sem correria" 
-                            : `Planejamento de micro-passos para o dia ${formatDateFriendly(selectedDate)}`}
-                        </p>
-                      </div>
-                      <div className="relative flex items-center" id="date-picker-container">
-                        <button 
-                          onClick={() => {
-                            if (dateInputRef.current) {
+                <div className="space-y-6" id="tab-hoje">
+                  <div className="flex items-center justify-between border-b border-art-dark pb-3">
+                    <div>
+                      <h2 className="text-2xl font-serif italic font-bold text-art-dark flex items-center gap-2">
+                        {selectedDate === todayStr ? "Metas para Hoje" : "Metas de Foco"}
+                      </h2>
+                      <p className="text-xs text-slate-500 mt-1 font-sans">
+                        {selectedDate === todayStr 
+                          ? "Micro-passos planejados para entregar no prazo sem correria" 
+                          : `Planejamento de micro-passos para o dia ${formatDateFriendly(selectedDate)}`}
+                      </p>
+                    </div>
+                    <div className="relative flex items-center" id="date-picker-container">
+                      <button 
+                        onClick={() => {
+                          if (dateInputRef.current) {
+                            try {
+                              dateInputRef.current.showPicker();
+                            } catch (err) {
                               try {
-                                dateInputRef.current.showPicker();
-                              } catch (err) {
-                                try {
-                                  dateInputRef.current.click();
-                                } catch (clickErr) {
-                                  dateInputRef.current.focus();
-                                }
+                                dateInputRef.current.click();
+                              } catch (clickErr) {
+                                dateInputRef.current.focus();
                               }
                             }
-                          }}
-                          className="text-xs bg-white hover:bg-art-soft-orange border border-art-dark px-3 py-1.5 font-mono text-art-dark font-bold shadow-[1px_1px_0px_rgba(26,26,26,1)] hover:shadow-[2px_2px_0px_rgba(26,26,26,1)] flex items-center gap-1.5 transition-all active:translate-x-[0.5px] active:translate-y-[0.5px] active:shadow-none select-none"
-                        >
-                          <Calendar className="w-3.5 h-3.5 text-art-orange shrink-0" />
-                          <span>{formatDateFriendly(selectedDate)}</span>
-                          {selectedDate === todayStr && (
-                            <span className="ml-1 px-1 bg-art-dark text-white text-[9px] uppercase font-sans font-black tracking-wider leading-none py-0.5">Hoje</span>
-                          )}
-                        </button>
-                        <input 
-                          ref={dateInputRef}
-                          type="date" 
-                          value={selectedDate} 
-                          onChange={(e) => {
-                            if (e.target.value) {
-                              setSelectedDate(e.target.value);
-                            }
-                          }} 
-                          className="absolute inset-0 opacity-0 pointer-events-none w-full h-full"
-                          title="Clique para escolher outro dia"
-                        />
-                      </div>
+                          }
+                        }}
+                        className="text-xs bg-white hover:bg-art-soft-orange border border-art-dark px-3 py-1.5 font-mono text-art-dark font-bold shadow-[1px_1px_0px_rgba(26,26,26,1)] hover:shadow-[2px_2px_0px_rgba(26,26,26,1)] flex items-center gap-1.5 transition-all active:translate-x-[0.5px] active:translate-y-[0.5px] active:shadow-none select-none"
+                      >
+                        <Calendar className="w-3.5 h-3.5 text-art-orange shrink-0" />
+                        <span>{formatDateFriendly(selectedDate)}</span>
+                        {selectedDate === todayStr && (
+                          <span className="ml-1 px-1 bg-art-dark text-white text-[9px] uppercase font-sans font-black tracking-wider leading-none py-0.5">Hoje</span>
+                        )}
+                      </button>
+                      <input 
+                        ref={dateInputRef}
+                        type="date" 
+                        value={selectedDate} 
+                        onChange={(e) => {
+                          if (e.target.value) {
+                            setSelectedDate(e.target.value);
+                          }
+                        }} 
+                        className="absolute inset-0 opacity-0 pointer-events-none w-full h-full"
+                        title="Clique para escolher outro dia"
+                      />
                     </div>
-
-                    {todaysMilestones.length === 0 ? (
-                      <div className="bg-white border border-dashed border-art-dark p-10 text-center flex flex-col items-center justify-center gap-4">
-                        <div className="bg-art-soft-orange p-4 border border-art-dark text-art-orange">
-                          <Sparkles className="w-6 h-6" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-bold text-art-dark uppercase tracking-wider">
-                            {selectedDate === todayStr ? "Sem metas para hoje!" : "Sem metas para este dia!"}
-                          </p>
-                          <p className="text-xs text-slate-500 mt-2 max-w-sm mx-auto leading-relaxed">
-                            {selectedDate === todayStr 
-                              ? "Excelente! Que tal criar uma nova tarefa e deixar o FOCO configurar as micro-metas diárias graduais?"
-                              : "Nenhuma meta programada para esta data. Use o botão acima para escolher outro dia ou crie uma nova tarefa!"}
-                          </p>
-                        </div>
-                        <button 
-                          onClick={() => {
-                            if (selectedDate !== todayStr) {
-                              setSelectedDate(todayStr);
-                            } else {
-                              setActiveTab("novo");
-                            }
-                          }}
-                          className="text-xs font-bold bg-art-orange hover:bg-art-dark text-white border border-art-dark px-5 py-2.5 uppercase tracking-widest transition"
-                        >
-                          {selectedDate !== todayStr ? "Voltar para Hoje" : "Planejar Nova Tarefa"}
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        
-                        {/* TRABALHO LIST */}
-                        <div 
-                          onDragOver={handleDragOver}
-                          onDrop={(e) => handleDrop(e, 'trabalho')}
-                          className={`p-4 border-2 transition-all duration-200 bg-white min-h-[350px] flex flex-col ${
-                            draggedId !== null 
-                              ? "border-dashed border-art-orange bg-art-soft-orange/10 scale-[1.01]" 
-                              : "border-art-dark bg-[#F2F4F7]"
-                          } shadow-[4px_4px_0px_rgba(26,26,26,1)]`}
-                        >
-                          <div className="flex items-center justify-between mb-4 border-b border-art-dark pb-2">
-                            <h3 className="font-serif italic font-bold text-base text-art-dark flex items-center gap-2">
-                              <Briefcase className="w-4 h-4 text-art-orange shrink-0" />
-                              Realizar no Trabalho
-                            </h3>
-                            <span className="text-xs font-mono bg-art-dark text-white px-2 py-0.5 font-bold">
-                              {todaysMilestones.filter(m => m.milestone.location === 'trabalho').length}
-                            </span>
-                          </div>
-
-                          <div className="space-y-3 flex-1">
-                            {todaysMilestones.filter(m => m.milestone.location === 'trabalho').length === 0 ? (
-                              <div className="py-12 px-4 text-center border border-dashed border-slate-300 bg-white/70 text-slate-500 text-xs flex flex-col items-center justify-center gap-2 h-full min-h-[200px]">
-                                <p className="font-bold">Nada no trabalho hoje</p>
-                                <p className="text-[10px] text-slate-400">Arraste uma atividade de hoje para cá ou clique em "Leva pro Trabalho" nos cards de casa.</p>
-                              </div>
-                            ) : (
-                              todaysMilestones
-                                .filter(m => m.milestone.location === 'trabalho')
-                                .map(({ milestone, taskName, category }) => (
-                                  <div 
-                                    key={milestone.id}
-                                    draggable={true}
-                                    onDragStart={(e) => handleDragStart(e, milestone.id)}
-                                    className={`p-4 border-2 transition-all duration-300 bg-white cursor-grab active:cursor-grabbing group relative ${
-                                      milestone.completed 
-                                        ? "border-art-dark/40 opacity-60 bg-[#F2F1EA] shadow-none" 
-                                        : "border-art-dark shadow-[2px_2px_0px_rgba(26,26,26,1)] hover:shadow-[3px_3px_0px_rgba(26,26,26,1)]"
-                                    }`}
-                                  >
-                                    <div className="flex items-start gap-3">
-                                      <button 
-                                        onClick={() => handleToggleMilestone(milestone.id, milestone.completed)}
-                                        className={`w-6 h-6 border-2 border-art-dark flex items-center justify-center transition-all shrink-0 mt-0.5 ${
-                                          milestone.completed 
-                                            ? "bg-art-dark text-white" 
-                                            : "bg-[#F9F8F3] text-transparent hover:bg-art-soft-orange"
-                                        }`}
-                                      >
-                                        <Check className="w-4 h-4 stroke-[3]" />
-                                      </button>
-
-                                      <div className="flex-1 space-y-1.5 min-w-0">
-                                        <div className="flex items-center justify-between gap-1 flex-wrap">
-                                          <span className="text-[8px] font-bold tracking-widest uppercase px-1.5 py-0.2 border border-art-dark bg-[#FFFAF0] text-art-orange">
-                                            {category}
-                                          </span>
-                                          <span className="text-[10px] font-mono text-slate-500 truncate max-w-[120px]">Tarefa: {taskName}</span>
-                                        </div>
-
-                                        <p className={`text-xs font-serif italic font-bold leading-snug transition-all break-words ${milestone.completed ? "text-slate-500 line-through font-normal" : "text-art-dark"}`}>
-                                          {milestone.label}: {milestone.description}
-                                        </p>
-
-                                        {/* Move Action Button */}
-                                        <div className="pt-1 flex items-center justify-between gap-2">
-                                          <span className="text-[9px] bg-[#F9F8F3] border border-art-dark px-1.5 py-0.2 font-mono text-art-dark font-bold">
-                                            {milestone.target_progress}%
-                                          </span>
-                                          <div className="flex items-center gap-1.5">
-                                            <button
-                                              onClick={() => handleUpdateMilestoneLocation(milestone.id, 'casa')}
-                                              title="Mudar para Casa"
-                                              className="text-[9px] font-bold font-mono uppercase bg-[#E8F5E9] hover:bg-art-orange hover:text-white border border-art-dark px-2 py-0.5 flex items-center gap-1 transition shadow-[1px_1px_0px_rgba(26,26,26,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
-                                            >
-                                              <Home className="w-2.5 h-2.5 text-emerald-700" />
-                                              Traz pra Casa
-                                            </button>
-                                            <button
-                                              onClick={() => handlePostponeMilestone(milestone.id, milestone.date_string)}
-                                              title="Levar para o próximo dia"
-                                              className="text-[9px] font-bold font-mono uppercase bg-[#E0F2FE] hover:bg-art-orange hover:text-white border border-art-dark px-2 py-0.5 flex items-center gap-1 transition shadow-[1px_1px_0px_rgba(26,26,26,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
-                                            >
-                                              <ArrowRight className="w-2.5 h-2.5 text-sky-700" />
-                                              Adiar 1 Dia
-                                            </button>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
-                                ))
-                            )}
-                          </div>
-                        </div>
-
-                        {/* CASA LIST */}
-                        <div 
-                          onDragOver={handleDragOver}
-                          onDrop={(e) => handleDrop(e, 'casa')}
-                          className={`p-4 border-2 transition-all duration-200 bg-white min-h-[350px] flex flex-col ${
-                            draggedId !== null 
-                              ? "border-dashed border-art-orange bg-art-soft-orange/10 scale-[1.01]" 
-                              : "border-art-dark bg-[#FAFAFA]"
-                          } shadow-[4px_4px_0px_rgba(26,26,26,1)]`}
-                        >
-                          <div className="flex items-center justify-between mb-4 border-b border-art-dark pb-2">
-                            <h3 className="font-serif italic font-bold text-base text-art-dark flex items-center gap-2">
-                              <Home className="w-4 h-4 text-art-orange shrink-0" />
-                              Realizar em Casa
-                            </h3>
-                            <span className="text-xs font-mono bg-art-dark text-white px-2 py-0.5 font-bold">
-                              {todaysMilestones.filter(m => !m.milestone.location || m.milestone.location === 'casa').length}
-                            </span>
-                          </div>
-
-                          <div className="space-y-3 flex-1">
-                            {todaysMilestones.filter(m => !m.milestone.location || m.milestone.location === 'casa').length === 0 ? (
-                              <div className="py-12 px-4 text-center border border-dashed border-slate-300 bg-white/70 text-slate-500 text-xs flex flex-col items-center justify-center gap-2 h-full min-h-[200px]">
-                                <p className="font-bold">Nada em casa hoje</p>
-                                <p className="text-[10px] text-slate-400">Arraste uma atividade de hoje para cá ou use "Traz pra Casa" nos cards do trabalho.</p>
-                              </div>
-                            ) : (
-                              todaysMilestones
-                                .filter(m => !m.milestone.location || m.milestone.location === 'casa')
-                                .map(({ milestone, taskName, category }) => (
-                                  <div 
-                                    key={milestone.id}
-                                    draggable={true}
-                                    onDragStart={(e) => handleDragStart(e, milestone.id)}
-                                    className={`p-4 border-2 transition-all duration-300 bg-white cursor-grab active:cursor-grabbing group relative ${
-                                      milestone.completed 
-                                        ? "border-art-dark/40 opacity-60 bg-[#F2F1EA] shadow-none" 
-                                        : "border-art-dark shadow-[2px_2px_0px_rgba(26,26,26,1)] hover:shadow-[3px_3px_0px_rgba(26,26,26,1)]"
-                                    }`}
-                                  >
-                                    <div className="flex items-start gap-3">
-                                      <button 
-                                        onClick={() => handleToggleMilestone(milestone.id, milestone.completed)}
-                                        className={`w-6 h-6 border-2 border-art-dark flex items-center justify-center transition-all shrink-0 mt-0.5 ${
-                                          milestone.completed 
-                                            ? "bg-art-dark text-white" 
-                                            : "bg-[#F9F8F3] text-transparent hover:bg-art-soft-orange"
-                                        }`}
-                                      >
-                                        <Check className="w-4 h-4 stroke-[3]" />
-                                      </button>
-
-                                      <div className="flex-1 space-y-1.5 min-w-0">
-                                        <div className="flex items-center justify-between gap-1 flex-wrap">
-                                          <span className="text-[8px] font-bold tracking-widest uppercase px-1.5 py-0.2 border border-art-dark bg-[#FFFAF0] text-art-orange">
-                                            {category}
-                                          </span>
-                                          <span className="text-[10px] font-mono text-slate-500 truncate max-w-[120px]">Tarefa: {taskName}</span>
-                                        </div>
-
-                                        <p className={`text-xs font-serif italic font-bold leading-snug transition-all break-words ${milestone.completed ? "text-slate-500 line-through font-normal" : "text-art-dark"}`}>
-                                          {milestone.label}: {milestone.description}
-                                        </p>
-
-                                        {/* Move Action Button */}
-                                        <div className="pt-1 flex items-center justify-between gap-2">
-                                          <span className="text-[9px] bg-[#F9F8F3] border border-art-dark px-1.5 py-0.2 font-mono text-art-dark font-bold">
-                                            {milestone.target_progress}%
-                                          </span>
-                                          <div className="flex items-center gap-1.5">
-                                            <button
-                                              onClick={() => handleUpdateMilestoneLocation(milestone.id, 'trabalho')}
-                                              title="Mudar para Trabalho"
-                                              className="text-[9px] font-bold font-mono uppercase bg-[#FFEFC6] hover:bg-art-orange hover:text-white border border-art-dark px-2 py-0.5 flex items-center gap-1 transition shadow-[1px_1px_0px_rgba(26,26,26,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
-                                            >
-                                              <Briefcase className="w-2.5 h-2.5 text-amber-700" />
-                                              Leva pro Trabalho
-                                            </button>
-                                            <button
-                                              onClick={() => handlePostponeMilestone(milestone.id, milestone.date_string)}
-                                              title="Levar para o próximo dia"
-                                              className="text-[9px] font-bold font-mono uppercase bg-[#E0F2FE] hover:bg-art-orange hover:text-white border border-art-dark px-2 py-0.5 flex items-center gap-1 transition shadow-[1px_1px_0px_rgba(26,26,26,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
-                                            >
-                                              <ArrowRight className="w-2.5 h-2.5 text-sky-700" />
-                                              Adiar 1 Dia
-                                            </button>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
-                                ))
-                            )}
-                          </div>
-                        </div>
-
-                      </div>
-                    )}
                   </div>
 
-                  {/* Right Column: Mini explanation */}
-                  <div className="space-y-6">
-                    <div className="bg-white border border-art-dark p-6 shadow-[4px_4px_0px_rgba(26,26,26,1)] space-y-4">
-                      <h3 className="font-serif italic font-bold text-xl text-art-dark flex items-center gap-2">
-                        O Conceito FOCO
-                      </h3>
-                      <div className="space-y-3.5 text-xs text-slate-600 leading-relaxed">
-                        <p>
-                          Estudos mostram que realizar grandes trabalhos de uma vez só gera procrastinação. O segredo é o <strong>micro-milestone progressivo</strong>.
+                  {todaysMilestones.length === 0 ? (
+                    <div className="bg-white border border-dashed border-art-dark p-10 text-center flex flex-col items-center justify-center gap-4">
+                      <div className="bg-art-soft-orange p-4 border border-art-dark text-art-orange">
+                        <Sparkles className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-art-dark uppercase tracking-wider">
+                          {selectedDate === todayStr ? "Sem metas para hoje!" : "Sem metas para este dia!"}
                         </p>
-                        <p>
-                          Como no exemplo da tarefa de inglês entregue na sexta-feira: ao invés de desespero na véspera, você estabelece metas crescentes ao longo da semana (20%, 40%, 80%, 100%).
-                        </p>
-                        <div className="bg-[#F9F8F3] p-4 border border-art-dark text-[11px] font-mono space-y-1.5 text-art-dark">
-                          <div className="text-art-orange font-bold uppercase tracking-wider text-[10px] mb-1">💡 Exemplo Prático:</div>
-                          <div>• Segunda: Planejamento inicial</div>
-                          <div>• Terça: Meta 20% (Pesquisa)</div>
-                          <div>• Quarta: Meta 40% (Escrever rascunho)</div>
-                          <div>• Quinta: Meta 80% (Revisão geral)</div>
-                          <div>• Sexta: Meta 100% (Entregar!)</div>
-                        </div>
-                        <p>
-                          Dessa forma, todo dia você tem apenas um pequeno passo para cumprir, mantendo a consistência e o foco perfeitos.
+                        <p className="text-xs text-slate-500 mt-2 max-w-sm mx-auto leading-relaxed">
+                          {selectedDate === todayStr 
+                            ? "Excelente! Que tal criar uma nova tarefa e deixar o FOCO configurar as micro-metas diárias graduais?"
+                            : "Nenhuma meta programada para esta data. Use o botão acima para escolher outro dia ou crie uma nova tarefa!"}
                         </p>
                       </div>
+                      <button 
+                        onClick={() => {
+                          if (selectedDate !== todayStr) {
+                            setSelectedDate(todayStr);
+                          } else {
+                            setActiveTab("novo");
+                          }
+                        }}
+                        className="text-xs font-bold bg-art-orange hover:bg-art-dark text-white border border-art-dark px-5 py-2.5 uppercase tracking-widest transition"
+                      >
+                        {selectedDate !== todayStr ? "Voltar para Hoje" : "Planejar Nova Tarefa"}
+                      </button>
                     </div>
+                  ) : (
+                    <div className="p-5 border-2 border-art-dark bg-white shadow-[4px_4px_0px_rgba(26,26,26,1)] space-y-4">
+                      <div className="flex items-center justify-between border-b border-art-dark pb-2">
+                        <h3 className="font-serif italic font-bold text-base text-art-dark flex items-center gap-2">
+                          <Sparkles className="w-4 h-4 text-art-orange shrink-0" />
+                          Lista de Metas
+                        </h3>
+                        <span className="text-xs font-mono bg-art-dark text-white px-2 py-0.5 font-bold">
+                          {todaysMilestones.length}
+                        </span>
+                      </div>
 
-                    {/* Quick Stats Summary */}
-                    <div className="bg-art-soft-orange border border-art-dark p-6 shadow-[4px_4px_0px_rgba(26,26,26,1)]">
-                      <h4 className="text-sm font-bold uppercase tracking-wider text-art-dark">Progresso Semanal</h4>
-                      <p className="text-xs text-slate-500 mt-1 font-serif italic">Status de todos os planejamentos ativos</p>
-                      
-                      <div className="mt-5 space-y-3">
-                        <div className="flex justify-between text-xs font-mono">
-                          <span className="text-slate-600 uppercase tracking-widest text-[10px]">Tarefas Entregues</span>
-                          <span className="text-art-orange font-bold">{completedTasks} / {totalTasks}</span>
-                        </div>
-                        <div className="w-full bg-[#EBE9E0] border border-art-dark h-3 overflow-hidden">
+                      <div className="space-y-3">
+                        {todaysMilestones.map(({ milestone, taskName, category }) => (
                           <div 
-                            className="bg-art-orange h-full transition-all duration-500"
-                            style={{ width: `${totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0}%` }}
-                          ></div>
-                        </div>
+                            key={milestone.id}
+                            className={`p-4 border-2 transition-all duration-300 bg-white group relative ${
+                              milestone.completed 
+                                ? "border-art-dark/40 opacity-60 bg-[#F2F1EA] shadow-none" 
+                                : "border-art-dark shadow-[2px_2px_0px_rgba(26,26,26,1)] hover:shadow-[3px_3px_0px_rgba(26,26,26,1)]"
+                            }`}
+                          >
+                            <div className="flex items-start gap-3">
+                              <button 
+                                onClick={() => handleToggleMilestone(milestone.id, milestone.completed)}
+                                className={`w-6 h-6 border-2 border-art-dark flex items-center justify-center transition-all shrink-0 mt-0.5 ${
+                                  milestone.completed 
+                                    ? "bg-art-dark text-white" 
+                                    : "bg-[#F9F8F3] text-transparent hover:bg-art-soft-orange"
+                                }`}
+                              >
+                                <Check className="w-4 h-4 stroke-[3]" />
+                              </button>
+
+                              <div className="flex-1 space-y-1.5 min-w-0">
+                                <div className="flex items-center justify-between gap-1 flex-wrap">
+                                  <span className="text-[8px] font-bold tracking-widest uppercase px-1.5 py-0.2 border border-art-dark bg-[#FFFAF0] text-art-orange">
+                                    {category}
+                                  </span>
+                                  <span className="text-[10px] font-mono text-slate-500 truncate max-w-[200px]">Tarefa: {taskName}</span>
+                                </div>
+
+                                <p className={`text-xs font-serif italic font-bold leading-snug transition-all break-words ${milestone.completed ? "text-slate-500 line-through font-normal" : "text-art-dark"}`}>
+                                  {milestone.label}: {milestone.description}
+                                </p>
+
+                                <div className="pt-1 flex items-center justify-between gap-2">
+                                  <span className="text-[9px] bg-[#F9F8F3] border border-art-dark px-1.5 py-0.2 font-mono text-art-dark font-bold">
+                                    {milestone.target_progress}%
+                                  </span>
+                                  <div className="flex items-center gap-1.5">
+                                    <button
+                                      onClick={() => handlePostponeMilestone(milestone.id, milestone.date_string)}
+                                      title="Levar para o próximo dia"
+                                      className="text-[9px] font-bold font-mono uppercase bg-[#E0F2FE] hover:bg-art-orange hover:text-white border border-art-dark px-2 py-0.5 flex items-center gap-1 transition shadow-[1px_1px_0px_rgba(26,26,26,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+                                    >
+                                      <ArrowRight className="w-2.5 h-2.5 text-sky-700" />
+                                      Adiar 1 Dia
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteMilestone(milestone.id)}
+                                      title="Excluir esta meta"
+                                      className="text-[9px] font-bold font-mono uppercase bg-red-50 hover:bg-red-600 hover:text-white border border-art-dark px-2 py-0.5 flex items-center gap-1 transition shadow-[1px_1px_0px_rgba(26,26,26,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none text-red-700"
+                                    >
+                                      <Trash className="w-2.5 h-2.5" />
+                                      Excluir
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
-                  </div>
-
+                  )}
                 </div>
               )}
 
@@ -1052,11 +847,8 @@ export default function App() {
                       </button>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-                      
-                      {/* Left: Tasks List */}
-                      <div className="xl:col-span-2 space-y-6">
-                        {tasks.map(task => {
+                    <div className="space-y-6">
+                      {tasks.map(task => {
                           const isSelected = selectedTaskId === task.id;
                           return (
                             <div 
@@ -1094,7 +886,7 @@ export default function App() {
                                 <button 
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    handleDeleteTask(task.id);
+                                    setTaskToDelete(task);
                                   }}
                                   className="p-2 text-slate-400 hover:text-white hover:bg-red-600 border border-transparent hover:border-art-dark transition"
                                   title="Remover Tarefa"
@@ -1168,9 +960,18 @@ export default function App() {
                                               <div className="font-bold text-xs text-art-dark uppercase tracking-wider">
                                                 {ms.label} <span className="text-slate-500 font-mono font-normal">({formatDateFriendly(ms.date_string)})</span>
                                               </div>
-                                              <span className={`text-[10px] font-mono font-bold uppercase px-2 py-0.5 border ${ms.completed ? "bg-art-dark text-white border-art-dark" : "bg-white text-art-dark border-art-dark"}`}>
-                                                Meta {ms.target_progress}%
-                                              </span>
+                                              <div className="flex items-center gap-2">
+                                                <span className={`text-[10px] font-mono font-bold uppercase px-2 py-0.5 border ${ms.completed ? "bg-art-dark text-white border-art-dark" : "bg-white text-art-dark border-art-dark"}`}>
+                                                  Meta {ms.target_progress}%
+                                                </span>
+                                                <button
+                                                  onClick={() => handleDeleteMilestone(ms.id)}
+                                                  title="Excluir esta meta"
+                                                  className="p-1 text-slate-400 hover:text-red-600 transition"
+                                                >
+                                                  <Trash className="w-3.5 h-3.5" />
+                                                </button>
+                                              </div>
                                             </div>
                                             <p className={`text-xs mt-2 transition-colors font-serif italic ${ms.completed ? "text-slate-400 line-through" : "text-slate-700"}`}>
                                               {ms.description}
@@ -1185,47 +986,6 @@ export default function App() {
                             </div>
                           );
                         })}
-                      </div>
-
-                      {/* Right: Informative Roadmap Sidebar */}
-                      <div className="space-y-6">
-                        <div className="bg-white border border-art-dark p-6 shadow-[4px_4px_0px_rgba(26,26,26,1)] space-y-4">
-                          <div className="flex items-center gap-2 text-art-dark font-bold text-sm uppercase tracking-wider border-b border-art-dark pb-2 font-mono">
-                            <Info className="w-4 h-4 text-art-orange" />
-                            Guia de Metas
-                          </div>
-                          <div className="space-y-3 text-xs text-slate-600 leading-relaxed">
-                            <p>
-                              Clique em qualquer card de tarefa para abrir o seu <strong>Roadmap de Progresso</strong>.
-                            </p>
-                            <p>
-                              Você pode marcar ou desmarcar marcos diretamente na linha do tempo para atualizar o progresso de cada tarefa em tempo real.
-                            </p>
-                            <div className="space-y-2.5 mt-3 py-3 border-y border-art-dark/10">
-                              <div className="flex items-center gap-2">
-                                <span className="w-4 h-4 border border-art-dark bg-art-dark shrink-0"></span>
-                                <span className="text-slate-700 font-bold text-[11px] uppercase tracking-wider">Quadrado preto:</span> Meta concluída
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className="w-4 h-4 border border-art-dark bg-white shrink-0"></span>
-                                <span className="text-slate-700 font-bold text-[11px] uppercase tracking-wider">Quadrado vazio:</span> Meta pendente
-                              </div>
-                            </div>
-                            <p className="pt-1">
-                              O progresso da tarefa se igualará à maior meta concluída, refletindo a sua evolução real em tempo real.
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Database Sync Information */}
-                        <div className="bg-white border border-art-dark p-6 text-xs shadow-[3px_3px_0px_rgba(26,26,26,1)]">
-                          <h4 className="font-bold text-[11px] uppercase tracking-widest text-art-dark mb-2 font-mono">Sincronização Neon DB</h4>
-                          <p className="text-slate-500 leading-relaxed font-serif italic">
-                            Todas as alterações de marcos e novas tarefas criadas são sincronizadas instantaneamente com o servidor do Neon Cloud PostgreSQL. Se a internet falhar ou o banco estiver offline, o app retém os dados localmente no navegador e se sincronizará assim que a conexão for restabelecida.
-                          </p>
-                        </div>
-                      </div>
-
                     </div>
                   )}
                 </div>
@@ -1395,10 +1155,37 @@ export default function App() {
         <p className="font-mono uppercase tracking-wider text-[10px] text-art-dark font-bold">
           <strong>FOCO</strong> — Gerenciador Inteligente de Metas Progressivas. 2026.
         </p>
-        <p className="text-[10px] text-slate-500 font-serif italic">
-          Desenvolvido com PostgreSQL (Neon Serverless Pooler) e Express para conexões seguras e persistentes.
-        </p>
+
       </footer>
+
+      {/* Task Deletion Modal */}
+      {taskToDelete && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white border-2 border-art-dark p-6 max-w-md w-full shadow-[6px_6px_0px_rgba(26,26,26,1)] space-y-4">
+            <div className="flex items-center gap-3 text-red-600">
+              <Trash className="w-6 h-6 shrink-0" />
+              <h3 className="font-serif italic font-bold text-lg text-art-dark">Excluir Planejamento</h3>
+            </div>
+            <p className="text-xs text-slate-600 leading-relaxed font-sans">
+              Tem certeza que deseja excluir "<strong>{taskToDelete.name}</strong>"? Esta ação removerá o planejamento e todas as suas metas associadas.
+            </p>
+            <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-200">
+              <button
+                onClick={() => setTaskToDelete(null)}
+                className="px-4 py-2 border border-art-dark text-xs font-mono font-bold hover:bg-slate-100 transition"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => confirmDeleteTask(taskToDelete.id)}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-mono font-bold border border-art-dark transition shadow-[2px_2px_0px_rgba(26,26,26,1)]"
+              >
+                Sim, Excluir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
