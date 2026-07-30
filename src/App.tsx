@@ -51,6 +51,7 @@ export default function App() {
   // Plan Checkbox States
   const [linuxPlanCheck1, setLinuxPlanCheck1] = useState(() => localStorage.getItem("plan_linux_1") === "true");
   const [linuxPlanCheck2, setLinuxPlanCheck2] = useState(() => localStorage.getItem("plan_linux_2") === "true");
+  const [linuxPlanCheck3, setLinuxPlanCheck3] = useState(() => localStorage.getItem("plan_linux_3") === "true");
   const [englishPlanCheck1, setEnglishPlanCheck1] = useState(() => localStorage.getItem("plan_eng_1") === "true");
   const [englishPlanCheck2, setEnglishPlanCheck2] = useState(() => localStorage.getItem("plan_eng_2") === "true");
   const [englishPlanCheck3, setEnglishPlanCheck3] = useState(() => localStorage.getItem("plan_eng_3") === "true");
@@ -61,6 +62,9 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem("plan_linux_2", String(linuxPlanCheck2));
   }, [linuxPlanCheck2]);
+  useEffect(() => {
+    localStorage.setItem("plan_linux_3", String(linuxPlanCheck3));
+  }, [linuxPlanCheck3]);
   useEffect(() => {
     localStorage.setItem("plan_eng_1", String(englishPlanCheck1));
   }, [englishPlanCheck1]);
@@ -816,7 +820,7 @@ export default function App() {
                   className="flex items-center justify-between p-2.5 bg-white border border-art-dark hover:bg-art-soft-orange/20 transition font-mono text-art-dark shadow-[1px_1px_0px_rgba(26,26,26,1)]"
                 >
                   <span className="flex items-center gap-1.5 truncate">
-                    <span className="text-art-orange font-bold uppercase text-[10px]">Anotações:</span> 
+                    <span className="text-art-orange font-bold uppercase text-[10px]">Meu Material:</span> 
                     <span className="underline font-semibold">gb-pensamentos</span>
                   </span>
                   <ExternalLink className="w-3.5 h-3.5 text-slate-500 shrink-0 ml-1" />
@@ -847,6 +851,17 @@ export default function App() {
                     Assistir e Registrar 1 aula da continuação
                   </span>
                 </label>
+                <label className="flex items-center gap-3 p-2.5 bg-white border border-art-dark cursor-pointer hover:bg-slate-50 transition shadow-[1px_1px_0px_rgba(26,26,26,1)]">
+                  <input 
+                    type="checkbox" 
+                    checked={linuxPlanCheck3}
+                    onChange={(e) => setLinuxPlanCheck3(e.target.checked)}
+                    className="w-4 h-4 accent-art-orange border-2 border-art-dark rounded-none cursor-pointer shrink-0"
+                  />
+                  <span className={`text-xs font-mono font-bold transition-all ${linuxPlanCheck3 ? "line-through text-slate-400" : "text-art-dark"}`}>
+                    Revisar Entrevistas
+                  </span>
+                </label>
               </div>
             </div>
 
@@ -866,6 +881,34 @@ export default function App() {
                 <span className="text-[10px] font-mono font-bold bg-art-dark text-white px-2 py-0.5">
                   IDIOMAS
                 </span>
+              </div>
+
+              {/* Links */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4 text-xs">
+                <a 
+                  href="https://tracker-english.vercel.app/" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between p-2.5 bg-white border border-art-dark hover:bg-art-soft-orange/20 transition font-mono text-art-dark shadow-[1px_1px_0px_rgba(26,26,26,1)]"
+                >
+                  <span className="flex items-center gap-1.5 truncate">
+                    <span className="text-art-orange font-bold uppercase text-[10px]">Entrevistas:</span> 
+                    <span className="underline font-semibold">tracker-english</span>
+                  </span>
+                  <ExternalLink className="w-3.5 h-3.5 text-slate-500 shrink-0 ml-1" />
+                </a>
+                <a 
+                  href="https://drive.google.com/drive/folders/1DRo7lE-Sd_ZpyqKPjZpWuevqcUfzVW77?usp=sharing" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between p-2.5 bg-white border border-art-dark hover:bg-art-soft-orange/20 transition font-mono text-art-dark shadow-[1px_1px_0px_rgba(26,26,26,1)]"
+                >
+                  <span className="flex items-center gap-1.5 truncate">
+                    <span className="text-art-orange font-bold uppercase text-[10px]">Meu Material:</span> 
+                    <span className="underline font-semibold">driver</span>
+                  </span>
+                  <ExternalLink className="w-3.5 h-3.5 text-slate-500 shrink-0 ml-1" />
+                </a>
               </div>
 
               {/* Tasks Checklist */}
@@ -889,7 +932,7 @@ export default function App() {
                     className="w-4 h-4 accent-art-orange border-2 border-art-dark rounded-none cursor-pointer shrink-0"
                   />
                   <span className={`text-xs font-mono font-bold transition-all ${englishPlanCheck2 ? "line-through text-slate-400" : "text-art-dark"}`}>
-                    Estudar com Anki
+                    Revisar Entrevistas
                   </span>
                 </label>
                 <label className="flex items-center gap-3 p-2.5 bg-white border border-art-dark cursor-pointer hover:bg-slate-50 transition shadow-[1px_1px_0px_rgba(26,26,26,1)]">
