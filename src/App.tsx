@@ -21,7 +21,10 @@ import {
   Award,
   Sparkles,
   Briefcase,
-  Home
+  Home,
+  ExternalLink,
+  Terminal,
+  Languages
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { Task, Milestone, DbStatus } from "./types";
@@ -45,6 +48,29 @@ export default function App() {
   });
   const dateInputRef = useRef<HTMLInputElement>(null);
 
+  // Plan Checkbox States
+  const [linuxPlanCheck1, setLinuxPlanCheck1] = useState(() => localStorage.getItem("plan_linux_1") === "true");
+  const [linuxPlanCheck2, setLinuxPlanCheck2] = useState(() => localStorage.getItem("plan_linux_2") === "true");
+  const [englishPlanCheck1, setEnglishPlanCheck1] = useState(() => localStorage.getItem("plan_eng_1") === "true");
+  const [englishPlanCheck2, setEnglishPlanCheck2] = useState(() => localStorage.getItem("plan_eng_2") === "true");
+  const [englishPlanCheck3, setEnglishPlanCheck3] = useState(() => localStorage.getItem("plan_eng_3") === "true");
+
+  useEffect(() => {
+    localStorage.setItem("plan_linux_1", String(linuxPlanCheck1));
+  }, [linuxPlanCheck1]);
+  useEffect(() => {
+    localStorage.setItem("plan_linux_2", String(linuxPlanCheck2));
+  }, [linuxPlanCheck2]);
+  useEffect(() => {
+    localStorage.setItem("plan_eng_1", String(englishPlanCheck1));
+  }, [englishPlanCheck1]);
+  useEffect(() => {
+    localStorage.setItem("plan_eng_2", String(englishPlanCheck2));
+  }, [englishPlanCheck2]);
+  useEffect(() => {
+    localStorage.setItem("plan_eng_3", String(englishPlanCheck3));
+  }, [englishPlanCheck3]);
+
   // Form States for creating task
   const [taskName, setTaskName] = useState("");
   const [taskCategory, setTaskCategory] = useState("Estudos");
@@ -60,13 +86,48 @@ export default function App() {
   // Local Time & Date Info
   const [currentTime, setCurrentTime] = useState(new Date());
 
-  // Update Clock
+  // Update Clock every second
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
-    }, 60000);
+    }, 1000);
     return () => clearInterval(timer);
   }, []);
+
+  const getCountdownToMay2027 = (now: Date) => {
+    const target = new Date("2027-05-31T23:59:59");
+    const diffMs = target.getTime() - now.getTime();
+
+    if (diffMs <= 0) {
+      return { totalDays: 0, months: 0, days: 0, hours: 0, minutes: 0, seconds: 0 };
+    }
+
+    const totalDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    let months = (target.getFullYear() - now.getFullYear()) * 12 + (target.getMonth() - now.getMonth());
+    let days = target.getDate() - now.getDate();
+    if (days < 0) {
+      months -= 1;
+      const lastDayPrevMonth = new Date(target.getFullYear(), target.getMonth(), 0).getDate();
+      days += lastDayPrevMonth;
+    }
+
+    const totalSeconds = Math.floor(diffMs / 1000);
+    const seconds = totalSeconds % 60;
+    const minutes = Math.floor(totalSeconds / 60) % 60;
+    const hours = Math.floor(totalSeconds / 3600) % 24;
+
+    return {
+      totalDays,
+      months: Math.max(0, months),
+      days: Math.max(0, days),
+      hours,
+      minutes,
+      seconds
+    };
+  };
+
+  const countdown = getCountdownToMay2027(currentTime);
 
   const getDayOfWeekName = (dateStr: string) => {
     const d = new Date(dateStr + "T12:00:00");
@@ -581,6 +642,116 @@ export default function App() {
       <section className="px-4 sm:px-10 pt-8 space-y-6" id="stats-section">
         {/* Video 1 */}
         <div className="bg-white border border-art-dark p-3 sm:p-4 shadow-[4px_4px_0px_rgba(26,26,26,1)] max-w-3xl mx-auto flex flex-col items-center justify-center">
+          
+          {/* Meta Principal • Maio 2027 Panel */}
+          <div className="w-full mb-5 pb-5 border-b-2 border-art-dark space-y-4 text-left">
+            <div className="bg-[#FAF9F5] border-2 border-art-dark p-4 sm:p-5 shadow-[3px_3px_0px_rgba(26,26,26,1)] space-y-4">
+              
+              {/* Header Badge & Deadline */}
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b-2 border-art-dark pb-3">
+                <div className="flex items-center gap-2">
+                  <span className="bg-art-dark text-white font-mono text-xs font-black px-2.5 py-1 uppercase tracking-wider flex items-center gap-1.5 shadow-[1px_1px_0px_rgba(0,0,0,0.2)]">
+                    <Target className="w-3.5 h-3.5 text-art-orange" />
+                    Meta Principal • Maio 2027
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 font-mono text-xs font-bold text-art-orange bg-white border border-art-dark px-2.5 py-1 shadow-[1px_1px_0px_rgba(26,26,26,1)]">
+                  <Calendar className="w-3.5 h-3.5" />
+                  <span>Prazo Final: Maio/2027</span>
+                </div>
+              </div>
+
+              {/* Fundamental Elements */}
+              <div className="space-y-2.5">
+                <h4 className="font-serif italic font-bold text-sm sm:text-base text-art-dark">
+                  Esses 2 elementos fundamentais para destravar todas BENÇÃOS
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div className="bg-white border-2 border-art-dark p-3 flex items-start gap-2.5 shadow-[2px_2px_0px_rgba(26,26,26,1)]">
+                    <div className="w-5 h-5 rounded-full bg-art-dark text-white flex items-center justify-center font-mono font-bold text-xs shrink-0 mt-0.5">
+                      1
+                    </div>
+                    <span className="text-xs font-mono font-bold text-art-dark leading-tight">
+                      Entender inglês e falar muito bem
+                    </span>
+                  </div>
+                  <div className="bg-white border-2 border-art-dark p-3 flex items-start gap-2.5 shadow-[2px_2px_0px_rgba(26,26,26,1)]">
+                    <div className="w-5 h-5 rounded-full bg-art-dark text-white flex items-center justify-center font-mono font-bold text-xs shrink-0 mt-0.5">
+                      2
+                    </div>
+                    <span className="text-xs font-mono font-bold text-art-dark leading-tight">
+                      Fazer e praticar todos os projetos e aulas LINUXTIPS
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Live Countdown Box */}
+              <div className="bg-white border-2 border-art-dark p-4 space-y-3 shadow-[2px_2px_0px_rgba(26,26,26,1)]">
+                <div className="flex items-center justify-between border-b border-art-dark/20 pb-2">
+                  <span className="font-mono text-xs font-black uppercase tracking-wider text-art-dark flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-art-orange animate-pulse" />
+                    Tempo Restante
+                  </span>
+                  <span className="font-mono text-[11px] font-black bg-art-soft-orange text-art-dark border border-art-dark px-2 py-0.5 uppercase tracking-wider">
+                    {countdown.totalDays} DIAS TOTAIS
+                  </span>
+                </div>
+
+                {/* Countdown Digit Blocks */}
+                <div className="grid grid-cols-5 gap-1.5 sm:gap-2 text-center">
+                  <div className="bg-[#F8F9FA] border border-art-dark p-1.5 sm:p-2 shadow-[1px_1px_0px_rgba(26,26,26,1)]">
+                    <div className="font-mono font-black text-base sm:text-xl text-art-dark">
+                      {String(countdown.months).padStart(2, '0')}
+                    </div>
+                    <div className="text-[9px] sm:text-[10px] font-mono uppercase font-bold text-slate-500">
+                      Meses
+                    </div>
+                  </div>
+                  <div className="bg-[#F8F9FA] border border-art-dark p-1.5 sm:p-2 shadow-[1px_1px_0px_rgba(26,26,26,1)]">
+                    <div className="font-mono font-black text-base sm:text-xl text-art-dark">
+                      {String(countdown.days).padStart(2, '0')}
+                    </div>
+                    <div className="text-[9px] sm:text-[10px] font-mono uppercase font-bold text-slate-500">
+                      Dias
+                    </div>
+                  </div>
+                  <div className="bg-[#F8F9FA] border border-art-dark p-1.5 sm:p-2 shadow-[1px_1px_0px_rgba(26,26,26,1)]">
+                    <div className="font-mono font-black text-base sm:text-xl text-art-dark">
+                      {String(countdown.hours).padStart(2, '0')}
+                    </div>
+                    <div className="text-[9px] sm:text-[10px] font-mono uppercase font-bold text-slate-500">
+                      Horas
+                    </div>
+                  </div>
+                  <div className="bg-[#F8F9FA] border border-art-dark p-1.5 sm:p-2 shadow-[1px_1px_0px_rgba(26,26,26,1)]">
+                    <div className="font-mono font-black text-base sm:text-xl text-art-dark">
+                      {String(countdown.minutes).padStart(2, '0')}
+                    </div>
+                    <div className="text-[9px] sm:text-[10px] font-mono uppercase font-bold text-slate-500">
+                      Min
+                    </div>
+                  </div>
+                  <div className="bg-art-orange text-white border border-art-dark p-1.5 sm:p-2 shadow-[1px_1px_0px_rgba(26,26,26,1)]">
+                    <div className="font-mono font-black text-base sm:text-xl">
+                      {String(countdown.seconds).padStart(2, '0')}
+                    </div>
+                    <div className="text-[9px] sm:text-[10px] font-mono uppercase font-bold text-white/90">
+                      Seg
+                    </div>
+                  </div>
+                </div>
+
+                <div className="text-center pt-1">
+                  <p className="font-mono text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    Consistência diária até Maio de 2027
+                  </p>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
           <div className="w-full relative overflow-hidden aspect-video border border-art-dark bg-black">
             <iframe 
               src="https://streamable.com/e/lq5cr2?loop=0" 
@@ -609,6 +780,132 @@ export default function App() {
           <p className="mt-3 text-center font-serif italic text-sm text-slate-700 tracking-wide leading-relaxed">
             "By balancing Linux and English, I can achieve everything else"
           </p>
+
+          {/* Formatted Plans Section */}
+          <div className="w-full mt-6 pt-5 border-t-2 border-art-dark space-y-6 text-left">
+            {/* LINUX - PLANO */}
+            <div className="bg-[#F8F9FA] border-2 border-art-dark p-4 sm:p-5 shadow-[3px_3px_0px_rgba(26,26,26,1)]">
+              <div className="flex items-center justify-between border-b-2 border-art-dark pb-2 mb-3">
+                <h4 className="font-mono font-black text-sm uppercase tracking-wider text-art-dark flex items-center gap-2">
+                  <Terminal className="w-4 h-4 text-art-orange shrink-0" />
+                  LINUX - PLANO
+                </h4>
+                <span className="text-[10px] font-mono font-bold bg-art-dark text-white px-2 py-0.5">
+                  SISTEMA & INFRA
+                </span>
+              </div>
+
+              {/* Links */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4 text-xs">
+                <a 
+                  href="https://tracker-class.vercel.app" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between p-2.5 bg-white border border-art-dark hover:bg-art-soft-orange/20 transition font-mono text-art-dark shadow-[1px_1px_0px_rgba(26,26,26,1)]"
+                >
+                  <span className="flex items-center gap-1.5 truncate">
+                    <span className="text-art-orange font-bold uppercase text-[10px]">Entrevistas:</span> 
+                    <span className="underline font-semibold">tracker-class</span>
+                  </span>
+                  <ExternalLink className="w-3.5 h-3.5 text-slate-500 shrink-0 ml-1" />
+                </a>
+                <a 
+                  href="https://gb-pensamentos.vercel.app" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between p-2.5 bg-white border border-art-dark hover:bg-art-soft-orange/20 transition font-mono text-art-dark shadow-[1px_1px_0px_rgba(26,26,26,1)]"
+                >
+                  <span className="flex items-center gap-1.5 truncate">
+                    <span className="text-art-orange font-bold uppercase text-[10px]">Anotações:</span> 
+                    <span className="underline font-semibold">gb-pensamentos</span>
+                  </span>
+                  <ExternalLink className="w-3.5 h-3.5 text-slate-500 shrink-0 ml-1" />
+                </a>
+              </div>
+
+              {/* Tasks Checklist */}
+              <div className="space-y-2">
+                <label className="flex items-center gap-3 p-2.5 bg-white border border-art-dark cursor-pointer hover:bg-slate-50 transition shadow-[1px_1px_0px_rgba(26,26,26,1)]">
+                  <input 
+                    type="checkbox" 
+                    checked={linuxPlanCheck1}
+                    onChange={(e) => setLinuxPlanCheck1(e.target.checked)}
+                    className="w-4 h-4 accent-art-orange border-2 border-art-dark rounded-none cursor-pointer shrink-0"
+                  />
+                  <span className={`text-xs font-mono font-bold transition-all ${linuxPlanCheck1 ? "line-through text-slate-400" : "text-art-dark"}`}>
+                    Assistir e Registrar 2 aulas do começo
+                  </span>
+                </label>
+                <label className="flex items-center gap-3 p-2.5 bg-white border border-art-dark cursor-pointer hover:bg-slate-50 transition shadow-[1px_1px_0px_rgba(26,26,26,1)]">
+                  <input 
+                    type="checkbox" 
+                    checked={linuxPlanCheck2}
+                    onChange={(e) => setLinuxPlanCheck2(e.target.checked)}
+                    className="w-4 h-4 accent-art-orange border-2 border-art-dark rounded-none cursor-pointer shrink-0"
+                  />
+                  <span className={`text-xs font-mono font-bold transition-all ${linuxPlanCheck2 ? "line-through text-slate-400" : "text-art-dark"}`}>
+                    Assistir e Registrar 1 aula da continuação
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            <div className="relative flex py-1 items-center">
+              <div className="flex-grow border-t-2 border-dashed border-art-dark/30"></div>
+              <span className="flex-shrink mx-3 font-mono text-[10px] text-slate-400 uppercase tracking-widest font-bold">foco contínuo</span>
+              <div className="flex-grow border-t-2 border-dashed border-art-dark/30"></div>
+            </div>
+
+            {/* ENGLISH - PLANO */}
+            <div className="bg-[#F8F9FA] border-2 border-art-dark p-4 sm:p-5 shadow-[3px_3px_0px_rgba(26,26,26,1)]">
+              <div className="flex items-center justify-between border-b-2 border-art-dark pb-2 mb-3">
+                <h4 className="font-mono font-black text-sm uppercase tracking-wider text-art-dark flex items-center gap-2">
+                  <Languages className="w-4 h-4 text-art-orange shrink-0" />
+                  ENGLISH - PLANO
+                </h4>
+                <span className="text-[10px] font-mono font-bold bg-art-dark text-white px-2 py-0.5">
+                  IDIOMAS
+                </span>
+              </div>
+
+              {/* Tasks Checklist */}
+              <div className="space-y-2">
+                <label className="flex items-center gap-3 p-2.5 bg-white border border-art-dark cursor-pointer hover:bg-slate-50 transition shadow-[1px_1px_0px_rgba(26,26,26,1)]">
+                  <input 
+                    type="checkbox" 
+                    checked={englishPlanCheck1}
+                    onChange={(e) => setEnglishPlanCheck1(e.target.checked)}
+                    className="w-4 h-4 accent-art-orange border-2 border-art-dark rounded-none cursor-pointer shrink-0"
+                  />
+                  <span className={`text-xs font-mono font-bold transition-all ${englishPlanCheck1 ? "line-through text-slate-400" : "text-art-dark"}`}>
+                    Fazer tarefa
+                  </span>
+                </label>
+                <label className="flex items-center gap-3 p-2.5 bg-white border border-art-dark cursor-pointer hover:bg-slate-50 transition shadow-[1px_1px_0px_rgba(26,26,26,1)]">
+                  <input 
+                    type="checkbox" 
+                    checked={englishPlanCheck2}
+                    onChange={(e) => setEnglishPlanCheck2(e.target.checked)}
+                    className="w-4 h-4 accent-art-orange border-2 border-art-dark rounded-none cursor-pointer shrink-0"
+                  />
+                  <span className={`text-xs font-mono font-bold transition-all ${englishPlanCheck2 ? "line-through text-slate-400" : "text-art-dark"}`}>
+                    Estudar com Anki
+                  </span>
+                </label>
+                <label className="flex items-center gap-3 p-2.5 bg-white border border-art-dark cursor-pointer hover:bg-slate-50 transition shadow-[1px_1px_0px_rgba(26,26,26,1)]">
+                  <input 
+                    type="checkbox" 
+                    checked={englishPlanCheck3}
+                    onChange={(e) => setEnglishPlanCheck3(e.target.checked)}
+                    className="w-4 h-4 accent-art-orange border-2 border-art-dark rounded-none cursor-pointer shrink-0"
+                  />
+                  <span className={`text-xs font-mono font-bold transition-all ${englishPlanCheck3 ? "line-through text-slate-400" : "text-art-dark"}`}>
+                    Assistir Cartoons
+                  </span>
+                </label>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -684,7 +981,7 @@ export default function App() {
                   <div className="flex items-center justify-between border-b border-art-dark pb-3">
                     <div>
                       <h2 className="text-2xl font-serif italic font-bold text-art-dark flex items-center gap-2">
-                        {selectedDate === todayStr ? "Metas para Hoje" : "Metas de Foco"}
+                        {selectedDate === todayStr ? "Foco na Prioridade" : "Metas de Foco"}
                       </h2>
                       <p className="text-xs text-slate-500 mt-1 font-sans">
                         {selectedDate === todayStr 
