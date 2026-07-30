@@ -814,7 +814,7 @@ export default function App() {
                   <ExternalLink className="w-3.5 h-3.5 text-slate-500 shrink-0 ml-1" />
                 </a>
                 <a 
-                  href="https://gb-pensamentos.vercel.app" 
+                  href="https://gb-pensamentos.vercel.app/?folder=Curso%20Completo%20LINUXTIPS" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="flex items-center justify-between p-2.5 bg-white border border-art-dark hover:bg-art-soft-orange/20 transition font-mono text-art-dark shadow-[1px_1px_0px_rgba(26,26,26,1)]"
