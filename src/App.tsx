@@ -953,7 +953,7 @@ export default function App() {
             <div className="bg-art-soft-orange/30 border-2 border-art-dark p-3.5 sm:p-4 shadow-[2px_2px_0px_rgba(26,26,26,1)] flex items-start gap-3">
               <p className="text-xs font-mono text-art-dark leading-relaxed">
                 <strong className="text-art-orange uppercase tracking-wider font-black">Hack dos Gênios:</strong>{" "}
-                <strong>Revisar (Entrevistas)</strong> o <strong>Meu Material</strong> gera motivação extrema — ao revisar aquilo que já domino, consolido o conhecimento e elevo minha confiança e motivação.
+                <strong>Revisar (Entrevistas)</strong> o <strong>Meu Material</strong> gera força extrema — ao revisar aquilo que já domino, consolido o conhecimento e elevo minha confiança e motivação.
               </p>
             </div>
           </div>
