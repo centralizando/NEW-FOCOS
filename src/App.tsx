@@ -956,6 +956,31 @@ export default function App() {
                 <strong>Revisar (Entrevistas)</strong> o <strong>Meu Material</strong> gera força extrema — ao revisar aquilo que já domino, consolido o conhecimento e elevo minha confiança e motivação.
               </p>
             </div>
+
+            {/* Link Gráfico de Evolução */}
+            <div className="pt-2">
+              <a 
+                href="https://gb-evolution.vercel.app/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="w-full flex items-center justify-between p-3.5 bg-art-dark hover:bg-art-orange text-white border-2 border-art-dark transition-all duration-200 font-mono shadow-[3px_3px_0px_rgba(26,26,26,1)] hover:shadow-[4px_4px_0px_rgba(26,26,26,1)] active:translate-x-[1px] active:translate-y-[1px] group"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="p-1.5 bg-art-orange group-hover:bg-art-dark text-white border border-white/20 transition-colors">
+                    <TrendingUp className="w-4 h-4" />
+                  </div>
+                  <div className="text-left">
+                    <span className="block text-xs font-bold uppercase tracking-wider">
+                      Gráfico de Evolução
+                    </span>
+                    <span className="block text-[10px] text-slate-300 group-hover:text-white/90 font-sans">
+                      gb-evolution.vercel.app
+                    </span>
+                  </div>
+                </div>
+                <ExternalLink className="w-4 h-4 text-slate-300 group-hover:text-white shrink-0 ml-2" />
+              </a>
+            </div>
           </div>
         </div>
       </section>
