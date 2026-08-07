@@ -898,14 +898,14 @@ export default function App() {
                   <ExternalLink className="w-3.5 h-3.5 text-slate-500 shrink-0 ml-1" />
                 </a>
                 <a 
-                  href="https://drive.google.com/drive/folders/1DRo7lE-Sd_ZpyqKPjZpWuevqcUfzVW77?usp=sharing" 
+                  href="https://gb-pensamentos.vercel.app/?folder=English" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="flex items-center justify-between p-2.5 bg-white border border-art-dark hover:bg-art-soft-orange/20 transition font-mono text-art-dark shadow-[1px_1px_0px_rgba(26,26,26,1)]"
                 >
                   <span className="flex items-center gap-1.5 truncate">
                     <span className="text-art-orange font-bold uppercase text-[10px]">Meu Material:</span> 
-                    <span className="underline font-semibold">driver</span>
+                    <span className="underline font-semibold">gb-pensamentos</span>
                   </span>
                   <ExternalLink className="w-3.5 h-3.5 text-slate-500 shrink-0 ml-1" />
                 </a>
