@@ -759,7 +759,7 @@ export default function App() {
           <div className="bg-art-soft-orange/30 border-t-2 border-art-dark p-3 sm:p-3.5 flex items-start gap-3 mt-3">
             <p className="text-xs font-mono text-art-dark leading-relaxed">
               <strong className="text-art-orange uppercase tracking-wider font-black">Hack dos Gênios:</strong>{" "}
-              Você foca somente em aprender e deixa o computador ficar responsavel de te fazer lembrar de tudo.
+              Você foca somente em aprender e deixa o computador ficar responsavel em te fazer lembrar de tudo.
             </p>
           </div>
         </div>
