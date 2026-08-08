@@ -14,8 +14,8 @@ const PORT = 3000;
 
 app.use(express.json());
 
-// Neon DB Connection details - strictly use the requested connection string
-const dbUrl = "postgresql://neondb_owner:npg_ERaPq9szZ3kp@ep-wispy-fog-at3k4k0x-pooler.c-9.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require";
+// Neon DB Connection details - using active GERAL database
+const dbUrl = process.env.NEON_DB_GERAL || "postgresql://neondb_owner:npg_bMg3l2cxdUCR@ep-damp-sound-aw5tdkxo-pooler.c-12.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require";
 
 let dbStatus = {
   connected: false,

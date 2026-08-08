@@ -742,10 +742,7 @@ export default function App() {
                             {connected ? "🟢 Online" : "🔴 Desconectado"}
                           </span>
                         </div>
-                        <div className="flex justify-between">
-                          <span>Tabelas:</span>
-                          <span>{dbInfo?.tablesCount || 0}</span>
-                        </div>
+
                       </div>
                     </div>
                   );
