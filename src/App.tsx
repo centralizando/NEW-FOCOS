@@ -681,7 +681,7 @@ export default function App() {
             <div className="flex items-center gap-2">
               <Database className="w-4 h-4 text-art-orange animate-pulse shrink-0" />
               <h4 className="font-mono font-black text-xs uppercase tracking-wider text-art-dark">
-                MONITOR SERVERLESS DE REVISÕES (NEON)
+                PERSONAL MONITOR
               </h4>
             </div>
             <button
@@ -706,25 +706,31 @@ export default function App() {
               {/* DB Cards Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs font-mono">
                 {[
-                  { key: 'LINUX', label: 'Linux DB', desc: 'tracker-class' },
-                  { key: 'ENGLISH', label: 'English DB', desc: 'tracker-english' },
-                  { key: 'GERAL', label: 'Geral DB', desc: 'gb-pensamentos' }
-                ].map(({ key, label }) => {
+                  { key: 'LINUX', label: 'Linux DB', url: 'https://tracker-class.vercel.app/' },
+                  { key: 'ENGLISH', label: 'English DB', url: 'https://tracker-english.vercel.app/' },
+                  { key: 'GERAL', label: 'Geral DB', url: 'https://gb-pensamentos.vercel.app/' }
+                ].map(({ key, label, url }) => {
                   const dbInfo = reviewsData.databases?.[key];
                   const pending = dbInfo?.pendingReviews || 0;
                   const connected = dbInfo?.connected;
 
                   return (
-                    <div 
+                    <a 
                       key={key}
-                      className={`p-3 border-2 ${
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`p-3 border-2 block transition-all hover:-translate-y-0.5 cursor-pointer ${
                         pending > 0 
-                          ? "border-amber-600 bg-amber-50/60 shadow-[2px_2px_0px_rgba(217,119,6,1)]" 
-                          : "border-art-dark bg-[#F8F9FA] shadow-[2px_2px_0px_rgba(26,26,26,1)]"
+                          ? "border-amber-600 bg-amber-50/60 hover:bg-amber-100 shadow-[2px_2px_0px_rgba(217,119,6,1)]" 
+                          : "border-art-dark bg-[#F8F9FA] hover:bg-white hover:border-art-orange shadow-[2px_2px_0px_rgba(26,26,26,1)]"
                       }`}
                     >
                       <div className="flex items-center justify-between mb-1.5">
-                        <span className="font-black text-xs uppercase text-art-dark">{label}</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-black text-xs uppercase text-art-dark">{label}</span>
+                          <ExternalLink className="w-3 h-3 text-slate-400 group-hover:text-art-dark" />
+                        </div>
                         <span 
                           className={`text-[10px] font-bold px-1.5 py-0.5 border ${
                             pending > 0 
@@ -742,9 +748,8 @@ export default function App() {
                             {connected ? "🟢 Online" : "🔴 Desconectado"}
                           </span>
                         </div>
-
                       </div>
-                    </div>
+                    </a>
                   );
                 })}
               </div>
