@@ -706,9 +706,9 @@ export default function App() {
               {/* DB Cards Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs font-mono">
                 {[
-                  { key: 'LINUX', label: 'Linux DB', url: 'https://tracker-class.vercel.app/' },
-                  { key: 'ENGLISH', label: 'English DB', url: 'https://tracker-english.vercel.app/' },
-                  { key: 'GERAL', label: 'Geral DB', url: 'https://gb-pensamentos.vercel.app/' }
+                  { key: 'LINUX', label: 'Linux', url: 'https://tracker-class.vercel.app/' },
+                  { key: 'ENGLISH', label: 'English', url: 'https://tracker-english.vercel.app/' },
+                  { key: 'GERAL', label: 'Geral', url: 'https://gb-pensamentos.vercel.app/' }
                 ].map(({ key, label, url }) => {
                   const dbInfo = reviewsData.databases?.[key];
                   const pending = dbInfo?.pendingReviews || 0;
@@ -729,7 +729,6 @@ export default function App() {
                       <div className="flex items-center justify-between mb-1.5">
                         <div className="flex items-center gap-1.5">
                           <span className="font-black text-xs uppercase text-art-dark">{label}</span>
-                          <ExternalLink className="w-3 h-3 text-slate-400 group-hover:text-art-dark" />
                         </div>
                         <span 
                           className={`text-[10px] font-bold px-1.5 py-0.5 border ${
