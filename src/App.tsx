@@ -27,7 +27,7 @@ import {
   Languages
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { Task, Milestone, DbStatus } from "./types";
+import { Task, Milestone, DbStatus, ReviewCheckResult } from "./types";
 
 export default function App() {
   // Global States
@@ -37,6 +37,8 @@ export default function App() {
     mode: "fallback",
     error: null
   });
+  const [reviewsData, setReviewsData] = useState<ReviewCheckResult | null>(null);
+  const [checkingReviews, setCheckingReviews] = useState(false);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"hoje" | "todas" | "novo">("hoje");
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
@@ -55,6 +57,9 @@ export default function App() {
   const [englishPlanCheck1, setEnglishPlanCheck1] = useState(() => localStorage.getItem("plan_eng_1") === "true");
   const [englishPlanCheck2, setEnglishPlanCheck2] = useState(() => localStorage.getItem("plan_eng_2") === "true");
   const [englishPlanCheck3, setEnglishPlanCheck3] = useState(() => localStorage.getItem("plan_eng_3") === "true");
+  const [geralPlanCheck1, setGeralPlanCheck1] = useState(() => localStorage.getItem("plan_geral_1") === "true");
+  const [geralPlanCheck2, setGeralPlanCheck2] = useState(() => localStorage.getItem("plan_geral_2") === "true");
+  const [geralPlanCheck3, setGeralPlanCheck3] = useState(() => localStorage.getItem("plan_geral_3") === "true");
 
   useEffect(() => {
     localStorage.setItem("plan_linux_1", String(linuxPlanCheck1));
@@ -74,6 +79,15 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem("plan_eng_3", String(englishPlanCheck3));
   }, [englishPlanCheck3]);
+  useEffect(() => {
+    localStorage.setItem("plan_geral_1", String(geralPlanCheck1));
+  }, [geralPlanCheck1]);
+  useEffect(() => {
+    localStorage.setItem("plan_geral_2", String(geralPlanCheck2));
+  }, [geralPlanCheck2]);
+  useEffect(() => {
+    localStorage.setItem("plan_geral_3", String(geralPlanCheck3));
+  }, [geralPlanCheck3]);
 
   // Form States for creating task
   const [taskName, setTaskName] = useState("");
@@ -172,8 +186,25 @@ export default function App() {
     }
   };
 
+  // Fetch serverless review check for GERAL, ENGLISH, LINUX Neon DBs
+  const fetchReviewsCheck = async () => {
+    setCheckingReviews(true);
+    try {
+      const res = await fetch("/api/check-reviews");
+      if (res.ok) {
+        const data = await res.json();
+        setReviewsData(data);
+      }
+    } catch (err) {
+      console.error("Error checking reviews across Neon DBs:", err);
+    } finally {
+      setCheckingReviews(false);
+    }
+  };
+
   useEffect(() => {
     fetchData();
+    fetchReviewsCheck();
   }, []);
 
   // Attempt database reconnection
@@ -644,6 +675,94 @@ export default function App() {
 
       {/* Video Section */}
       <section className="px-4 sm:px-10 pt-8 space-y-6" id="stats-section">
+        {/* Monitor Serverless de Revisões Neon */}
+        <div className="bg-white border-2 border-art-dark p-4 shadow-[4px_4px_0px_rgba(26,26,26,1)] max-w-3xl mx-auto space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b-2 border-art-dark pb-2.5 mb-3">
+            <div className="flex items-center gap-2">
+              <Database className="w-4 h-4 text-art-orange animate-pulse shrink-0" />
+              <h4 className="font-mono font-black text-xs uppercase tracking-wider text-art-dark">
+                MONITOR SERVERLESS DE REVISÕES (NEON)
+              </h4>
+            </div>
+            <button
+              onClick={fetchReviewsCheck}
+              disabled={checkingReviews}
+              className="flex items-center gap-1.5 px-3 py-1 bg-art-dark text-white hover:bg-art-orange transition font-mono text-[11px] font-bold border border-art-dark shadow-[1px_1px_0px_rgba(26,26,26,1)] active:translate-x-[1px] active:translate-y-[1px] disabled:opacity-50 cursor-pointer"
+            >
+              <RefreshCw className={`w-3 h-3 ${checkingReviews ? "animate-spin" : ""}`} />
+              <span>{checkingReviews ? "VERIFICANDO..." : "VERIFICAR REVISÕES"}</span>
+            </button>
+          </div>
+
+          {checkingReviews && !reviewsData && (
+            <div className="p-3 bg-slate-50 border border-art-dark text-xs font-mono text-slate-600 flex items-center gap-2">
+              <RefreshCw className="w-3.5 h-3.5 animate-spin text-art-orange" />
+              <span>Conectando aos 3 bancos de dados Neon (GERAL, ENGLISH, LINUX)...</span>
+            </div>
+          )}
+
+          {reviewsData && (
+            <div className="space-y-3">
+              {/* DB Cards Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs font-mono">
+                {[
+                  { key: 'LINUX', label: 'Linux DB', desc: 'tracker-class' },
+                  { key: 'ENGLISH', label: 'English DB', desc: 'tracker-english' },
+                  { key: 'GERAL', label: 'Geral DB', desc: 'gb-pensamentos' }
+                ].map(({ key, label }) => {
+                  const dbInfo = reviewsData.databases?.[key];
+                  const pending = dbInfo?.pendingReviews || 0;
+                  const connected = dbInfo?.connected;
+
+                  return (
+                    <div 
+                      key={key}
+                      className={`p-3 border-2 ${
+                        pending > 0 
+                          ? "border-amber-600 bg-amber-50/60 shadow-[2px_2px_0px_rgba(217,119,6,1)]" 
+                          : "border-art-dark bg-[#F8F9FA] shadow-[2px_2px_0px_rgba(26,26,26,1)]"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="font-black text-xs uppercase text-art-dark">{label}</span>
+                        <span 
+                          className={`text-[10px] font-bold px-1.5 py-0.5 border ${
+                            pending > 0 
+                              ? "bg-amber-600 text-white border-amber-800 animate-pulse" 
+                              : "bg-emerald-700 text-white border-emerald-900"
+                          }`}
+                        >
+                          {pending > 0 ? `${pending} PENDENTE(S)` : "0 PENDENTES"}
+                        </span>
+                      </div>
+                      <div className="text-[10px] text-slate-600 space-y-0.5">
+                        <div className="flex justify-between">
+                          <span>Status:</span>
+                          <span className={connected ? "text-emerald-700 font-bold" : "text-rose-600 font-bold"}>
+                            {connected ? "🟢 Online" : "🔴 Desconectado"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Tabelas:</span>
+                          <span>{dbInfo?.tablesCount || 0}</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Hack dos Gênios Callout - Grudado diretamente com o Monitor */}
+          <div className="bg-art-soft-orange/30 border-t-2 border-art-dark p-3 sm:p-3.5 flex items-start gap-3 mt-3">
+            <p className="text-xs font-mono text-art-dark leading-relaxed">
+              <strong className="text-art-orange uppercase tracking-wider font-black">Hack dos Gênios:</strong>{" "}
+              Você foca somente em aprender e deixa o computador ficar responsavel de te fazer lembrar de tudo.
+            </p>
+          </div>
+        </div>
+
         {/* Video 1 */}
         <div className="bg-white border border-art-dark p-3 sm:p-4 shadow-[4px_4px_0px_rgba(26,26,26,1)] max-w-3xl mx-auto flex flex-col items-center justify-center">
           
@@ -787,6 +906,7 @@ export default function App() {
 
           {/* Formatted Plans Section */}
           <div className="w-full mt-6 pt-5 border-t-2 border-art-dark space-y-6 text-left">
+            
             {/* LINUX - PLANO */}
             <div className="bg-[#F8F9FA] border-2 border-art-dark p-4 sm:p-5 shadow-[3px_3px_0px_rgba(26,26,26,1)]">
               <div className="flex items-center justify-between border-b-2 border-art-dark pb-2 mb-3">
@@ -794,15 +914,23 @@ export default function App() {
                   <Terminal className="w-4 h-4 text-art-orange shrink-0" />
                   LINUX - PLANO
                 </h4>
-                <span className="text-[10px] font-mono font-bold bg-art-dark text-white px-2 py-0.5">
-                  SISTEMA & INFRA
-                </span>
+                <div className="flex items-center gap-1.5">
+                  {reviewsData?.databases?.LINUX?.pendingReviews ? (
+                    <span className="text-[10px] font-mono font-bold bg-amber-600 text-white px-2 py-0.5 animate-pulse border border-amber-800">
+                      ⚠️ {reviewsData.databases.LINUX.pendingReviews} REVISÃO(ÕES)
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-mono font-bold bg-art-dark text-white px-2 py-0.5">
+                      SISTEMA & INFRA
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* Links */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                 <a 
-                  href="https://tracker-class.vercel.app" 
+                  href="https://tracker-class.vercel.app/" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="flex items-center justify-between p-2.5 bg-white border border-art-dark hover:bg-art-soft-orange/20 transition font-mono text-art-dark shadow-[1px_1px_0px_rgba(26,26,26,1)]"
@@ -826,43 +954,6 @@ export default function App() {
                   <ExternalLink className="w-3.5 h-3.5 text-slate-500 shrink-0 ml-1" />
                 </a>
               </div>
-
-              {/* Tasks Checklist */}
-              <div className="space-y-2">
-                <label className="flex items-center gap-3 p-2.5 bg-white border border-art-dark cursor-pointer hover:bg-slate-50 transition shadow-[1px_1px_0px_rgba(26,26,26,1)]">
-                  <input 
-                    type="checkbox" 
-                    checked={linuxPlanCheck1}
-                    onChange={(e) => setLinuxPlanCheck1(e.target.checked)}
-                    className="w-4 h-4 accent-art-orange border-2 border-art-dark rounded-none cursor-pointer shrink-0"
-                  />
-                  <span className={`text-xs font-mono font-bold transition-all ${linuxPlanCheck1 ? "line-through text-slate-400" : "text-art-dark"}`}>
-                    Assistir e Registrar 2 aulas do começo
-                  </span>
-                </label>
-                <label className="flex items-center gap-3 p-2.5 bg-white border border-art-dark cursor-pointer hover:bg-slate-50 transition shadow-[1px_1px_0px_rgba(26,26,26,1)]">
-                  <input 
-                    type="checkbox" 
-                    checked={linuxPlanCheck2}
-                    onChange={(e) => setLinuxPlanCheck2(e.target.checked)}
-                    className="w-4 h-4 accent-art-orange border-2 border-art-dark rounded-none cursor-pointer shrink-0"
-                  />
-                  <span className={`text-xs font-mono font-bold transition-all ${linuxPlanCheck2 ? "line-through text-slate-400" : "text-art-dark"}`}>
-                    Assistir e Registrar 1 aula da continuação
-                  </span>
-                </label>
-                <label className="flex items-center gap-3 p-2.5 bg-white border border-art-dark cursor-pointer hover:bg-slate-50 transition shadow-[1px_1px_0px_rgba(26,26,26,1)]">
-                  <input 
-                    type="checkbox" 
-                    checked={linuxPlanCheck3}
-                    onChange={(e) => setLinuxPlanCheck3(e.target.checked)}
-                    className="w-4 h-4 accent-art-orange border-2 border-art-dark rounded-none cursor-pointer shrink-0"
-                  />
-                  <span className={`text-xs font-mono font-bold transition-all ${linuxPlanCheck3 ? "line-through text-slate-400" : "text-art-dark"}`}>
-                    Revisar Entrevistas
-                  </span>
-                </label>
-              </div>
             </div>
 
             <div className="relative flex py-1 items-center">
@@ -878,13 +969,21 @@ export default function App() {
                   <Languages className="w-4 h-4 text-art-orange shrink-0" />
                   ENGLISH - PLANO
                 </h4>
-                <span className="text-[10px] font-mono font-bold bg-art-dark text-white px-2 py-0.5">
-                  IDIOMAS
-                </span>
+                <div className="flex items-center gap-1.5">
+                  {reviewsData?.databases?.ENGLISH?.pendingReviews ? (
+                    <span className="text-[10px] font-mono font-bold bg-amber-600 text-white px-2 py-0.5 animate-pulse border border-amber-800">
+                      ⚠️ {reviewsData.databases.ENGLISH.pendingReviews} REVISÃO(ÕES)
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-mono font-bold bg-art-dark text-white px-2 py-0.5">
+                      IDIOMAS
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* Links */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                 <a 
                   href="https://tracker-english.vercel.app/" 
                   target="_blank" 
@@ -910,51 +1009,50 @@ export default function App() {
                   <ExternalLink className="w-3.5 h-3.5 text-slate-500 shrink-0 ml-1" />
                 </a>
               </div>
-
-              {/* Tasks Checklist */}
-              <div className="space-y-2">
-                <label className="flex items-center gap-3 p-2.5 bg-white border border-art-dark cursor-pointer hover:bg-slate-50 transition shadow-[1px_1px_0px_rgba(26,26,26,1)]">
-                  <input 
-                    type="checkbox" 
-                    checked={englishPlanCheck1}
-                    onChange={(e) => setEnglishPlanCheck1(e.target.checked)}
-                    className="w-4 h-4 accent-art-orange border-2 border-art-dark rounded-none cursor-pointer shrink-0"
-                  />
-                  <span className={`text-xs font-mono font-bold transition-all ${englishPlanCheck1 ? "line-through text-slate-400" : "text-art-dark"}`}>
-                    Fazer tarefa
-                  </span>
-                </label>
-                <label className="flex items-center gap-3 p-2.5 bg-white border border-art-dark cursor-pointer hover:bg-slate-50 transition shadow-[1px_1px_0px_rgba(26,26,26,1)]">
-                  <input 
-                    type="checkbox" 
-                    checked={englishPlanCheck2}
-                    onChange={(e) => setEnglishPlanCheck2(e.target.checked)}
-                    className="w-4 h-4 accent-art-orange border-2 border-art-dark rounded-none cursor-pointer shrink-0"
-                  />
-                  <span className={`text-xs font-mono font-bold transition-all ${englishPlanCheck2 ? "line-through text-slate-400" : "text-art-dark"}`}>
-                    Revisar Entrevistas
-                  </span>
-                </label>
-                <label className="flex items-center gap-3 p-2.5 bg-white border border-art-dark cursor-pointer hover:bg-slate-50 transition shadow-[1px_1px_0px_rgba(26,26,26,1)]">
-                  <input 
-                    type="checkbox" 
-                    checked={englishPlanCheck3}
-                    onChange={(e) => setEnglishPlanCheck3(e.target.checked)}
-                    className="w-4 h-4 accent-art-orange border-2 border-art-dark rounded-none cursor-pointer shrink-0"
-                  />
-                  <span className={`text-xs font-mono font-bold transition-all ${englishPlanCheck3 ? "line-through text-slate-400" : "text-art-dark"}`}>
-                    Assistir Cartoons
-                  </span>
-                </label>
-              </div>
             </div>
 
-            {/* Hack dos Gênios Callout */}
-            <div className="bg-art-soft-orange/30 border-2 border-art-dark p-3.5 sm:p-4 shadow-[2px_2px_0px_rgba(26,26,26,1)] flex items-start gap-3">
-              <p className="text-xs font-mono text-art-dark leading-relaxed">
-                <strong className="text-art-orange uppercase tracking-wider font-black">Hack dos Gênios:</strong>{" "}
-                <strong>Revisar (Entrevistas)</strong> o <strong>Meu Material</strong> gera força extrema — ao revisar aquilo que já domino, consolido o conhecimento e elevo minha confiança e motivação.
-              </p>
+            <div className="relative flex py-1 items-center">
+              <div className="flex-grow border-t-2 border-dashed border-art-dark/30"></div>
+              <span className="flex-shrink mx-3 font-mono text-[10px] text-slate-400 uppercase tracking-widest font-bold">foco contínuo</span>
+              <div className="flex-grow border-t-2 border-dashed border-art-dark/30"></div>
+            </div>
+
+            {/* GERAL - PLANO */}
+            <div className="bg-[#F8F9FA] border-2 border-art-dark p-4 sm:p-5 shadow-[3px_3px_0px_rgba(26,26,26,1)]">
+              <div className="flex items-center justify-between border-b-2 border-art-dark pb-2 mb-3">
+                <h4 className="font-mono font-black text-sm uppercase tracking-wider text-art-dark flex items-center gap-2">
+                  <Target className="w-4 h-4 text-art-orange shrink-0" />
+                  GERAL - PLANO
+                </h4>
+                <div className="flex items-center gap-1.5">
+                  {reviewsData?.databases?.GERAL?.pendingReviews ? (
+                    <span className="text-[10px] font-mono font-bold bg-amber-600 text-white px-2 py-0.5 animate-pulse border border-amber-800">
+                      ⚠️ {reviewsData.databases.GERAL.pendingReviews} REVISÃO(ÕES)
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-mono font-bold bg-art-dark text-white px-2 py-0.5">
+                      GERAL
+                    </span>
+                  )}
+                </div>
+              </div>
+
+
+              {/* Links */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                <a 
+                  href="https://gb-pensamentos.vercel.app/" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between p-2.5 bg-white border border-art-dark hover:bg-art-soft-orange/20 transition font-mono text-art-dark shadow-[1px_1px_0px_rgba(26,26,26,1)]"
+                >
+                  <span className="flex items-center gap-1.5 truncate">
+                    <span className="text-art-orange font-bold uppercase text-[10px]">Meu Material:</span> 
+                    <span className="underline font-semibold">gb-pensamentos</span>
+                  </span>
+                  <ExternalLink className="w-3.5 h-3.5 text-slate-500 shrink-0 ml-1" />
+                </a>
+              </div>
             </div>
 
             {/* Link Gráfico de Evolução */}

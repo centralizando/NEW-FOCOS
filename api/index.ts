@@ -588,7 +588,232 @@ app.delete("/api/milestones/:id", async (req, res) => {
 });
 
 
+// Multi-database Neon Review Checker Endpoint
+const TARGET_DATABASES: Record<string, string> = {
+  GERAL: process.env.NEON_DB_GERAL || "postgresql://neondb_owner:npg_bMg3l2cxdUCR@ep-damp-sound-aw5tdkxo-pooler.c-12.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require",
+  ENGLISH: process.env.NEON_DB_ENGLISH || "postgresql://neondb_owner:npg_LoXV3C7IFiBh@ep-morning-bird-ax4nha9k-pooler.c-4.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require",
+  LINUX: process.env.NEON_DB_LINUX || "postgresql://neondb_owner:npg_G5NY8gBqThCl@ep-wispy-lake-ayededeo-pooler.c-5.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+};
+
+async function inspectDbForReviews(key: string, connectionString: string) {
+  const tempPool = new Pool({
+    connectionString,
+    ssl: { rejectUnauthorized: false },
+    connectionTimeoutMillis: 5000
+  });
+
+  try {
+    const client = await tempPool.connect();
+    try {
+      const tablesRes = await client.query(`
+        SELECT table_name 
+        FROM information_schema.tables 
+        WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
+      `);
+      
+      const tables = tablesRes.rows.map(r => r.table_name);
+      let totalPendingReviews = 0;
+      let totalItems = 0;
+      const tableSummaries: any[] = [];
+
+      for (const tableName of tables) {
+        const colsRes = await client.query(`
+          SELECT column_name, data_type 
+          FROM information_schema.columns 
+          WHERE table_schema = 'public' AND table_name = $1
+        `, [tableName]);
+
+        const colsInfo = colsRes.rows.map(c => ({
+          name: c.column_name,
+          lower: c.column_name.toLowerCase(),
+          type: c.data_type.toLowerCase()
+        }));
+
+        const colNames = colsInfo.map(c => c.lower);
+
+        // Find date / timestamp columns for reviews/due
+        const dateColObj = colsInfo.find(c => 
+          c.lower.includes('review') || 
+          c.lower.includes('revis') || 
+          c.lower.includes('due') || 
+          c.lower.includes('schedul') || 
+          c.lower.includes('proxim') ||
+          c.lower.includes('expire') ||
+          (c.lower.includes('next') && (c.lower.includes('date') || c.lower.includes('at') || c.lower.includes('time') || c.lower.includes('day')))
+        ) || colsInfo.find(c => c.type.includes('date') || c.type.includes('timestamp'));
+
+        // Find completion / boolean columns
+        const boolColObj = colsInfo.find(c => 
+          c.lower.includes('completed') || 
+          c.lower.includes('revisad') || 
+          c.lower.includes('done') || 
+          c.lower.includes('learned') || 
+          c.lower.includes('mastered') || 
+          c.lower.includes('finished') ||
+          c.lower.includes('reviewed')
+        ) || colsInfo.find(c => c.type === 'boolean');
+
+        // Find status / state column
+        const statusColObj = colsInfo.find(c => 
+          c.lower === 'status' || 
+          c.lower === 'state' || 
+          c.lower.includes('status') || 
+          c.lower.includes('state')
+        );
+
+        let totalInTable = 0;
+        try {
+          const totalRes = await client.query(`SELECT COUNT(*) as count FROM "${tableName}"`);
+          totalInTable = parseInt(totalRes.rows[0]?.count || "0", 10);
+        } catch (e) {}
+
+        let pendingInTable = 0;
+
+        // Custom exact calculation per database schema provided by the user
+        if (key === 'ENGLISH' && tableName.toLowerCase() === 'curso_progresso') {
+          try {
+            const q = `
+              SELECT COUNT(*) as count 
+              FROM curso_progresso 
+              WHERE concluida = TRUE 
+                AND data_conclusao IS NOT NULL 
+                AND (data_conclusao::timestamp + (COALESCE(dias_revisao, 30) || ' days')::interval) <= CURRENT_TIMESTAMP;
+            `;
+            const resVal = await client.query(q);
+            pendingInTable = parseInt(resVal.rows[0]?.count || "0", 10);
+          } catch (e) {
+            console.error("Error querying ENGLISH specific review query:", e);
+          }
+        } else if (key === 'LINUX' && tableName.toLowerCase() === 'curso_progresso') {
+          try {
+            const q = `
+              SELECT COUNT(*) as count 
+              FROM curso_progresso 
+              WHERE concluida = TRUE 
+                AND data_conclusao IS NOT NULL 
+                AND COALESCE(NULLIF(split_part(data_conclusao, '|', 2), ''), '30')::integer > 0 
+                AND (split_part(data_conclusao, '|', 1)::timestamp 
+                  + (COALESCE(NULLIF(split_part(data_conclusao, '|', 2), ''), '30')::integer || ' days')::interval) <= NOW();
+            `;
+            const resVal = await client.query(q);
+            pendingInTable = parseInt(resVal.rows[0]?.count || "0", 10);
+          } catch (e) {
+            console.error("Error querying LINUX specific review query:", e);
+          }
+        } else if (key === 'GERAL' && tableName.toLowerCase() === 'neon_notes') {
+          try {
+            const q = `
+              SELECT COUNT(*) as count 
+              FROM neon_notes 
+              WHERE review_at IS NOT NULL 
+                AND review_at <= CURRENT_TIMESTAMP;
+            `;
+            const resVal = await client.query(q);
+            pendingInTable = parseInt(resVal.rows[0]?.count || "0", 10);
+          } catch (e) {
+            console.error("Error querying GERAL specific review query:", e);
+          }
+        } else {
+          // Dynamic inspection fallback for other tables or schema variations
+          let whereClauses: string[] = [];
+
+          if (dateColObj) {
+            if (dateColObj.type.includes('int')) {
+              whereClauses.push(`("${dateColObj.name}" <= EXTRACT(EPOCH FROM NOW()) * 1000 OR "${dateColObj.name}" <= EXTRACT(EPOCH FROM NOW()))`);
+            } else if (dateColObj.type.includes('char') || dateColObj.type.includes('text')) {
+              whereClauses.push(`("${dateColObj.name}" <= TO_CHAR(NOW(), 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') OR "${dateColObj.name}" <= TO_CHAR(NOW(), 'YYYY-MM-DD') OR "${dateColObj.name}" <= CURRENT_DATE::text)`);
+            } else {
+              whereClauses.push(`("${dateColObj.name}" <= NOW() OR "${dateColObj.name}" <= CURRENT_DATE)`);
+            }
+          }
+
+          if (boolColObj) {
+            whereClauses.push(`"${boolColObj.name}" = false`);
+          } else if (statusColObj) {
+            whereClauses.push(`LOWER("${statusColObj.name}"::text) NOT IN ('done', 'completed', 'concluido', 'concluído', 'mastered', 'learned', 'finished', 'ok', '1', 'true', 'reviewed')`);
+          }
+
+          if (totalInTable > 0 && whereClauses.length > 0) {
+            const queryCombined = `SELECT COUNT(*) as count FROM "${tableName}" WHERE ${whereClauses.join(" AND ")}`;
+            try {
+              const pRes = await client.query(queryCombined);
+              pendingInTable = parseInt(pRes.rows[0]?.count || "0", 10);
+            } catch (e) {
+              console.error(`Error querying dynamic pending for ${tableName}:`, e);
+              pendingInTable = 0;
+            }
+          }
+        }
+
+        totalPendingReviews += pendingInTable;
+        totalItems += totalInTable;
+
+        tableSummaries.push({
+          tableName,
+          totalItems: totalInTable,
+          pendingReviews: pendingInTable,
+          columns: colNames,
+          dateCol: dateColObj?.name || null,
+          boolCol: boolColObj?.name || null,
+          statusCol: statusColObj?.name || null
+        });
+      }
+
+      return {
+        key,
+        connected: true,
+        tablesCount: tables.length,
+        totalItems,
+        pendingReviews: totalPendingReviews,
+        tables: tableSummaries,
+        hasReviews: totalPendingReviews > 0,
+        lastChecked: new Date().toISOString()
+      };
+    } finally {
+      client.release();
+    }
+  } catch (err: any) {
+    console.error(`Error checking reviews for DB ${key}:`, err.message);
+    return {
+      key,
+      connected: false,
+      error: err.message,
+      pendingReviews: 0,
+      hasReviews: false,
+      lastChecked: new Date().toISOString()
+    };
+  } finally {
+    try { await tempPool.end(); } catch (e) {}
+  }
+}
+
+app.get("/api/check-reviews", async (req, res) => {
+  try {
+    const results: Record<string, any> = {};
+    const promises = Object.entries(TARGET_DATABASES).map(async ([key, url]) => {
+      const resData = await inspectDbForReviews(key, url);
+      results[key] = resData;
+    });
+
+    await Promise.all(promises);
+
+    const totalPending = Object.values(results).reduce((acc, curr) => acc + (curr.pendingReviews || 0), 0);
+    const hasAnyReview = totalPending > 0;
+
+    res.json({
+      success: true,
+      totalPending,
+      hasAnyReview,
+      databases: results,
+      timestamp: new Date().toISOString()
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Configure Vite dev server or static distribution
+
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
     const { createServer: createViteServer } = await import("vite");

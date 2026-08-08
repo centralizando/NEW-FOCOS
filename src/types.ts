@@ -25,3 +25,33 @@ export interface DbStatus {
   mode: "postgres" | "fallback";
   error: string | null;
 }
+
+export interface TableSummary {
+  tableName: string;
+  totalItems: number;
+  pendingReviews: number;
+  columns?: string[];
+  dateCol?: string | null;
+  boolCol?: string | null;
+  statusCol?: string | null;
+}
+
+export interface ReviewDbInfo {
+  key: string;
+  connected: boolean;
+  tablesCount?: number;
+  totalItems?: number;
+  pendingReviews?: number;
+  tables?: TableSummary[];
+  hasReviews?: boolean;
+  error?: string;
+  lastChecked?: string;
+}
+
+export interface ReviewCheckResult {
+  success: boolean;
+  totalPending: number;
+  hasAnyReview: boolean;
+  databases: Record<string, ReviewDbInfo>;
+  timestamp?: string;
+}
