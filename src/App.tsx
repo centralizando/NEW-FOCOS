@@ -697,7 +697,7 @@ export default function App() {
           {checkingReviews && !reviewsData && (
             <div className="p-3 bg-slate-50 border border-art-dark text-xs font-mono text-slate-600 flex items-center gap-2">
               <RefreshCw className="w-3.5 h-3.5 animate-spin text-art-orange" />
-              <span>Conectando aos 3 bancos de dados Neon (GERAL, ENGLISH, LINUX)...</span>
+              <span>Conectando aos 3 bancos de dados Neon (NOTES, ENGLISH, LINUX)...</span>
             </div>
           )}
 
@@ -708,7 +708,7 @@ export default function App() {
                 {[
                   { key: 'LINUX', label: 'Linux', url: 'https://tracker-class.vercel.app/' },
                   { key: 'ENGLISH', label: 'English', url: 'https://tracker-english.vercel.app/' },
-                  { key: 'GERAL', label: 'Geral', url: 'https://gb-pensamentos.vercel.app/' }
+                  { key: 'GERAL', label: 'Notes', url: 'https://gb-pensamentos.vercel.app/' }
                 ].map(({ key, label, url }) => {
                   const dbInfo = reviewsData.databases?.[key];
                   const pending = dbInfo?.pendingReviews || 0;
@@ -755,15 +755,11 @@ export default function App() {
             </div>
           )}
 
-          {/* Hack Callouts - Grudado diretamente com o Monitor */}
-          <div className="bg-art-soft-orange/30 border-t-2 border-art-dark p-3 sm:p-3.5 flex flex-col gap-2 mt-3">
+          {/* Hack dos Gênios Callout - Grudado diretamente com o Monitor */}
+          <div className="bg-art-soft-orange/30 border-t-2 border-art-dark p-3 sm:p-3.5 flex items-start gap-3 mt-3">
             <p className="text-xs font-mono text-art-dark leading-relaxed">
               <strong className="text-art-orange uppercase tracking-wider font-black">Hack dos Gênios:</strong>{" "}
               Você foca somente em aprender e deixa o computador ficar responsavel em te fazer lembrar de tudo e organizar tudo.
-            </p>
-            <p className="text-xs font-mono text-art-dark leading-relaxed">
-              <strong className="text-art-orange uppercase tracking-wider font-black">Hack dos Sobrevivência Pedágio:</strong>{" "}
-              Respirar Profundamente &amp; Escrever a Mão
             </p>
           </div>
         </div>
@@ -1022,12 +1018,12 @@ export default function App() {
               <div className="flex-grow border-t-2 border-dashed border-art-dark/30"></div>
             </div>
 
-            {/* GERAL - PLANO */}
+            {/* NOTES - PLANO */}
             <div className="bg-[#F8F9FA] border-2 border-art-dark p-4 sm:p-5 shadow-[3px_3px_0px_rgba(26,26,26,1)]">
               <div className="flex items-center justify-between border-b-2 border-art-dark pb-2 mb-3">
                 <h4 className="font-mono font-black text-sm uppercase tracking-wider text-art-dark flex items-center gap-2">
                   <Target className="w-4 h-4 text-art-orange shrink-0" />
-                  GERAL - PLANO
+                  NOTES - PLANO
                 </h4>
                 <div className="flex items-center gap-1.5">
                   {reviewsData?.databases?.GERAL?.pendingReviews ? (
@@ -1036,7 +1032,7 @@ export default function App() {
                     </span>
                   ) : (
                     <span className="text-[10px] font-mono font-bold bg-art-dark text-white px-2 py-0.5">
-                      GERAL
+                      NOTES
                     </span>
                   )}
                 </div>

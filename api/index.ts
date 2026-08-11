@@ -611,7 +611,10 @@ async function inspectDbForReviews(key: string, connectionString: string) {
         WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
       `);
       
-      const tables = tablesRes.rows.map(r => r.table_name);
+      let tables = tablesRes.rows.map(r => r.table_name);
+      if (key === 'ENGLISH') {
+        tables = tables.filter(t => t.toLowerCase() === 'curso_progresso');
+      }
       let totalPendingReviews = 0;
       let totalItems = 0;
       const tableSummaries: any[] = [];
