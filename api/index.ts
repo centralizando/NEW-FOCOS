@@ -613,7 +613,7 @@ async function inspectDbForReviews(key: string, connectionString: string) {
       
       let tables = tablesRes.rows.map(r => r.table_name);
       if (key === 'ENGLISH') {
-        tables = tables.filter(t => t.toLowerCase() === 'curso_progresso');
+        tables = tables.filter(t => t.toLowerCase() === 'curso_progresso' || t.toLowerCase() === 'compromissos');
       }
       let totalPendingReviews = 0;
       let totalItems = 0;
@@ -686,6 +686,37 @@ async function inspectDbForReviews(key: string, connectionString: string) {
             pendingInTable = parseInt(resVal.rows[0]?.count || "0", 10);
           } catch (e) {
             console.error("Error querying ENGLISH specific review query:", e);
+          }
+        } else if (key === 'ENGLISH' && tableName.toLowerCase() === 'compromissos') {
+          try {
+            const q = `
+              SELECT COUNT(*) as count 
+              FROM compromissos 
+              WHERE (
+                data_evento::date = CURRENT_DATE 
+                OR data_evento::date = (CURRENT_TIMESTAMP AT TIME ZONE 'America/Sao_Paulo')::date
+              )
+              AND (concluido IS NOT TRUE);
+            `;
+            const resVal = await client.query(q);
+            pendingInTable = parseInt(resVal.rows[0]?.count || "0", 10);
+          } catch (e) {
+            console.error("Error querying ENGLISH compromissos query:", e);
+            try {
+              const qFallback = `
+                SELECT COUNT(*) as count 
+                FROM compromissos 
+                WHERE (
+                  data_evento LIKE TO_CHAR(CURRENT_DATE, 'YYYY-MM-DD') || '%'
+                  OR data_evento LIKE TO_CHAR(CURRENT_DATE, 'DD/MM/YYYY') || '%'
+                )
+                AND (concluido IS NOT TRUE OR concluido::text IN ('false', '0'));
+              `;
+              const resVal = await client.query(qFallback);
+              pendingInTable = parseInt(resVal.rows[0]?.count || "0", 10);
+            } catch (e2) {
+              console.error("Error in compromissos fallback query:", e2);
+            }
           }
         } else if (key === 'LINUX' && tableName.toLowerCase() === 'curso_progresso') {
           try {
