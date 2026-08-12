@@ -707,7 +707,7 @@ export default function App() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs font-mono">
                 {[
                   { key: 'LINUX', label: 'Linux', url: 'https://tracker-class.vercel.app/' },
-                  { key: 'ENGLISH', label: 'English', url: 'https://tracker-english.vercel.app/' },
+                  { key: 'ENGLISH', label: 'English/AGENDA', url: 'https://tracker-english.vercel.app/' },
                   { key: 'GERAL', label: 'Notes', url: 'https://gb-pensamentos.vercel.app/' }
                 ].map(({ key, label, url }) => {
                   const dbInfo = reviewsData.databases?.[key];
@@ -998,7 +998,7 @@ export default function App() {
                   <ExternalLink className="w-3.5 h-3.5 text-slate-500 shrink-0 ml-1" />
                 </a>
                 <a 
-                  href="https://gb-pensamentos.vercel.app/?folder=English" 
+                  href="https://english-t-ext.vercel.app" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="flex items-center justify-between p-2.5 bg-white border border-art-dark hover:bg-art-soft-orange/20 transition font-mono text-art-dark shadow-[1px_1px_0px_rgba(26,26,26,1)]"
