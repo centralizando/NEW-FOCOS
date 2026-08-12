@@ -706,9 +706,9 @@ export default function App() {
               {/* DB Cards Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs font-mono">
                 {[
-                  { key: 'LINUX', label: 'Linux', url: 'https://tracker-class.vercel.app/' },
+                  { key: 'LINUX', label: 'Linux', url: 'https://gcp-linux.vercel.app/' },
                   { key: 'ENGLISH', label: 'English/AGENDA', url: 'https://tracker-english.vercel.app/' },
-                  { key: 'GERAL', label: 'Notes', url: 'https://gb-pensamentos.vercel.app/' }
+                  { key: 'GERAL', label: 'Notes', url: 'https://gbp-notes.vercel.app/' }
                 ].map(({ key, label, url }) => {
                   const dbInfo = reviewsData.databases?.[key];
                   const pending = dbInfo?.pendingReviews || 0;
@@ -931,7 +931,7 @@ export default function App() {
               {/* Links */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                 <a 
-                  href="https://tracker-class.vercel.app/" 
+                  href="https://gcp-linux.vercel.app/" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="flex items-center justify-between p-2.5 bg-white border border-art-dark hover:bg-art-soft-orange/20 transition font-mono text-art-dark shadow-[1px_1px_0px_rgba(26,26,26,1)]"
@@ -943,7 +943,7 @@ export default function App() {
                   <ExternalLink className="w-3.5 h-3.5 text-slate-500 shrink-0 ml-1" />
                 </a>
                 <a 
-                  href="https://gb-pensamentos.vercel.app/?folder=Curso%20Completo%20LINUXTIPS" 
+                  href="https://gbp-notes.vercel.app/?folder=Curso%20Completo%20LINUXTIPS" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="flex items-center justify-between p-2.5 bg-white border border-art-dark hover:bg-art-soft-orange/20 transition font-mono text-art-dark shadow-[1px_1px_0px_rgba(26,26,26,1)]"
@@ -1042,7 +1042,7 @@ export default function App() {
               {/* Links */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                 <a 
-                  href="https://gb-pensamentos.vercel.app/" 
+                  href="https://gbp-notes.vercel.app/" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="flex items-center justify-between p-2.5 bg-white border border-art-dark hover:bg-art-soft-orange/20 transition font-mono text-art-dark shadow-[1px_1px_0px_rgba(26,26,26,1)]"
