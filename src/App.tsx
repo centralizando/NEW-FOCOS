@@ -756,10 +756,14 @@ export default function App() {
           )}
 
           {/* Hack dos Gênios Callout - Grudado diretamente com o Monitor */}
-          <div className="bg-art-soft-orange/30 border-t-2 border-art-dark p-3 sm:p-3.5 flex items-start gap-3 mt-3">
+          <div className="bg-art-soft-orange/30 border-t-2 border-art-dark p-3 sm:p-3.5 space-y-2.5 mt-3">
             <p className="text-xs font-mono text-art-dark leading-relaxed">
               <strong className="text-art-orange uppercase tracking-wider font-black">Hack dos Gênios:</strong>{" "}
               Você foca somente em aprender e deixa o computador ficar responsavel em te fazer lembrar de tudo e organizar tudo.
+            </p>
+            <p className="text-xs font-mono text-art-dark leading-relaxed pt-2.5 border-t border-art-dark/20">
+              <strong className="text-art-orange uppercase tracking-wider font-black">Hack dos Gênios:</strong>{" "}
+              Entende como funciona, obtenha pequenas vitórias e acume cada vez mais confiança no meu potêncial.
             </p>
           </div>
         </div>
