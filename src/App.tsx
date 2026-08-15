@@ -937,8 +937,8 @@ export default function App() {
                   className="flex items-center justify-between p-2.5 bg-white border border-art-dark hover:bg-art-soft-orange/20 transition font-mono text-art-dark shadow-[1px_1px_0px_rgba(26,26,26,1)]"
                 >
                   <span className="flex items-center gap-1.5 truncate">
-                    <span className="text-art-orange font-bold uppercase text-[10px]">Entrevistas:</span> 
-                    <span className="underline font-semibold">tracker-class</span>
+                    <span className="text-art-orange font-bold uppercase text-[10px]">O que?/Quando revisar?:</span> 
+                    <span className="underline font-semibold">clique-aqui</span>
                   </span>
                   <ExternalLink className="w-3.5 h-3.5 text-slate-500 shrink-0 ml-1" />
                 </a>
@@ -950,7 +950,7 @@ export default function App() {
                 >
                   <span className="flex items-center gap-1.5 truncate">
                     <span className="text-art-orange font-bold uppercase text-[10px]">Meu Material:</span> 
-                    <span className="underline font-semibold">gb-pensamentos</span>
+                    <span className="underline font-semibold">Fazer-Entrevistas</span>
                   </span>
                   <ExternalLink className="w-3.5 h-3.5 text-slate-500 shrink-0 ml-1" />
                 </a>
@@ -992,20 +992,20 @@ export default function App() {
                   className="flex items-center justify-between p-2.5 bg-white border border-art-dark hover:bg-art-soft-orange/20 transition font-mono text-art-dark shadow-[1px_1px_0px_rgba(26,26,26,1)]"
                 >
                   <span className="flex items-center gap-1.5 truncate">
-                    <span className="text-art-orange font-bold uppercase text-[10px]">Entrevistas:</span> 
-                    <span className="underline font-semibold">tracker-english</span>
+                    <span className="text-art-orange font-bold uppercase text-[10px]">O que?/Quando revisar?</span> 
+                    <span className="underline font-semibold">clique-aqui</span>
                   </span>
                   <ExternalLink className="w-3.5 h-3.5 text-slate-500 shrink-0 ml-1" />
                 </a>
                 <a 
-                  href="https://english-t-ext.vercel.app" 
+                  href="https://gp-en-study.vercel.app/" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="flex items-center justify-between p-2.5 bg-white border border-art-dark hover:bg-art-soft-orange/20 transition font-mono text-art-dark shadow-[1px_1px_0px_rgba(26,26,26,1)]"
                 >
                   <span className="flex items-center gap-1.5 truncate">
                     <span className="text-art-orange font-bold uppercase text-[10px]">Meu Material:</span> 
-                    <span className="underline font-semibold">gb-pensamentos</span>
+                    <span className="underline font-semibold">textos-em-inglês</span>
                   </span>
                   <ExternalLink className="w-3.5 h-3.5 text-slate-500 shrink-0 ml-1" />
                 </a>
@@ -1049,7 +1049,7 @@ export default function App() {
                 >
                   <span className="flex items-center gap-1.5 truncate">
                     <span className="text-art-orange font-bold uppercase text-[10px]">Meu Material:</span> 
-                    <span className="underline font-semibold">gb-pensamentos</span>
+                    <span className="underline font-semibold">notas + revisções</span>
                   </span>
                   <ExternalLink className="w-3.5 h-3.5 text-slate-500 shrink-0 ml-1" />
                 </a>
