@@ -614,6 +614,8 @@ async function inspectDbForReviews(key: string, connectionString: string) {
       let tables = tablesRes.rows.map(r => r.table_name);
       if (key === 'ENGLISH') {
         tables = tables.filter(t => t.toLowerCase() === 'curso_progresso' || t.toLowerCase() === 'compromissos');
+      } else if (key === 'GERAL') {
+        tables = tables.filter(t => t.toLowerCase() === 'neon_notes');
       }
       let totalPendingReviews = 0;
       let totalItems = 0;
