@@ -765,6 +765,10 @@ export default function App() {
               <strong className="text-art-orange uppercase tracking-wider font-black">Hack dos Gênios:</strong>{" "}
               Controlar Peso + Controlar Corpo = Confiança, Confiança você viva a vida e não sofra com a vida.
             </p>
+            <p className="text-xs font-mono text-art-dark leading-relaxed pt-2.5 border-t border-art-dark/20">
+              <strong className="text-art-orange uppercase tracking-wider font-black">Hack dos Gênios:</strong>{" "}
+              Dormir 8 horas, pois restaura células da mente, restaura o metabolismo e o corpo
+            </p>
           </div>
         </div>
 
