@@ -763,7 +763,7 @@ export default function App() {
             </p>
             <p className="text-xs font-mono text-art-dark leading-relaxed pt-2.5 border-t border-art-dark/20">
               <strong className="text-art-orange uppercase tracking-wider font-black">Hack dos Gênios:</strong>{" "}
-              Entende como funciona, obtenha pequenas vitórias e acume cada vez mais confiança no meu potêncial.
+              Controlar Peso + Controlar Corpo = Confiança, Confiança você viva a vida e não sofra com a vida.
             </p>
           </div>
         </div>
